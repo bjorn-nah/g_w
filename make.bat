@@ -8,7 +8,7 @@ cc65 -Oi g_w.c --add-source
 ca65 crt0.s
 ca65 g_w.s
 
-ld65 -C nrom_128_horz.cfg -o %name% crt0.o g_w.o nes.lib
+ld65 -C nrom_256_horz_custom.cfg -o %name% crt0.o g_w.o nes.lib
 
 pause
 
