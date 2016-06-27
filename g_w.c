@@ -6,13 +6,13 @@
 #include "g_w.h"
 
 static unsigned int i;
-static unsigned int pos_lapin,pos_lapin_old, wait, wait_max, tir_x, tir_y,tir_y_old, score;
+static unsigned int pos_lapin,pos_lapin_old, wait, wait_max, tir_x, tir_y,tir_y_old, score, compteur;
 static unsigned int tir_oeuf_x, tir_oeuf_y,tir_oeuf_y_old,hit_lapin;
-static unsigned char pad, move;
+static unsigned char pad, move, c_score;
 
 //put a string into the nametable
 
-static unsigned char list[5*4*3*2+1];
+static unsigned char list[5*4*3*2+9+1];
 // structure de la liste :
 // lapin : 4 tules x (x,y,id_tule)
 // oeuf 1 : 4 tules x (x,y,id_tule)
@@ -25,7 +25,8 @@ const unsigned char palBackground[16]={ 0x0f,0x38,0x17,0x28,0x0f,0x18,0x28,0x38,
 
 
 
-static unsigned int oeuf[6]={6,6,1,6,6,1};
+// static unsigned int oeuf[6]={6,6,1,6,6,1};
+static unsigned int oeuf[6]={2,6,1,6,6,1};
 
 
 //init data for the update list, it contains MSB and LSB of a tile address
@@ -207,20 +208,33 @@ void efface_tir_o(unsigned int pos_x,unsigned int pos_y)
 	list[119]=0x2b;
 }
 
+void put_score(const int sco)
+{
+	list[120]= MSB(NTADR_A(6,2));
+	list[121]= LSB(NTADR_A(6,2));
+	list[122]= 0x30+(sco%10);
+	list[123]= MSB(NTADR_A(5,2));
+	list[124]= LSB(NTADR_A(5,2));
+	list[125]= 0x30+(sco/10)%100;
+	list[126]= MSB(NTADR_A(4,2));
+	list[127]= LSB(NTADR_A(4,2));
+	list[128]= 0x30+(sco/100);
+}
+
 void main(void)
 {
 	//rendering is disabled at the startup, the palette is all black
 
 	pal_bg(palBackground);
 
-	for(i=0;i<(10*12);i++)
+	for(i=0;i<(10*12+3);i++)
 	{
 		list[i*3] = MSB(NTADR_A(0,0));
 		list[i*3+1] = LSB(NTADR_A(0,0));
 		list[i*3+2] = 0x27;
 	}
 	
-	list[5*4*3*2] = NT_UPD_EOF;
+	list[5*4*3*2+9] = NT_UPD_EOF;
 	
 	set_vram_update(list);
 	
@@ -236,6 +250,7 @@ void main(void)
 	move = 0;
 	wait_max = 60;
 	score = 0;
+	compteur = 0;
 	
 	// set le premier lapin
 	place_lapin(pos_lapin);
@@ -249,6 +264,7 @@ void main(void)
 		ppu_wait_frame();
 		pad=pad_poll(0);
 		wait++;
+		compteur++;
 
 		if(pad&PAD_LEFT && pos_lapin>  0 && move ==0&&hit_lapin==0)
 		{
@@ -271,6 +287,7 @@ void main(void)
 		
 		 if(wait>wait_max)
 		{
+			set_rand(compteur);
 			if(tir_y < 3) tir_y--;
 			if(tir_oeuf_y >0) tir_oeuf_y++;
 			for(i=0;i<2;i++)
@@ -280,14 +297,15 @@ void main(void)
 				if(oeuf[i*3]==5&&oeuf[i*3+2]==2)oeuf[i*3+2]=1;
 				if(oeuf[i*3]<6&&oeuf[i*3+2]==1)oeuf[i*3]--;
 				if(oeuf[i*3]<6&&oeuf[i*3+2]==2)oeuf[i*3]++;
-				if(6==oeuf[i*3]&& rand8()==1)oeuf[i*3]--;
+				if(6==oeuf[i*3]&& rand16()==1)oeuf[i*3]--;
 				if(6==oeuf[i*3])oeuf[i*3]--;
-				if(tir_oeuf_y==0&&oeuf[i*3]!=6&&(rand8()%4)==1)
+				if(tir_oeuf_y==0&&oeuf[i*3]!=6&&(rand16()%4)==1)
 				{
 					tir_oeuf_y++;
 					tir_oeuf_x= oeuf[i*3];
 				}
 			}
+			put_score(score);
 			wait =0;
 		}
 		if(tir_y == 0)
