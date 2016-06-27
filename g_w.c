@@ -8,7 +8,7 @@
 static unsigned int i;
 static unsigned int pos_lapin,pos_lapin_old, wait, wait_max, tir_x, tir_y,tir_y_old, score, compteur;
 static unsigned int tir_oeuf_x, tir_oeuf_y,tir_oeuf_y_old,hit_lapin;
-static unsigned char pad, move, c_score;
+static unsigned char pad, move;
 
 //put a string into the nametable
 
@@ -25,8 +25,7 @@ const unsigned char palBackground[16]={ 0x0f,0x38,0x17,0x28,0x0f,0x18,0x28,0x38,
 
 
 
-// static unsigned int oeuf[6]={6,6,1,6,6,1};
-static unsigned int oeuf[6]={2,6,1,6,6,1};
+static unsigned int oeuf[6]={6,6,1,6,6,1};
 
 
 //init data for the update list, it contains MSB and LSB of a tile address
@@ -215,7 +214,7 @@ void put_score(const int sco)
 	list[122]= 0x30+(sco%10);
 	list[123]= MSB(NTADR_A(5,2));
 	list[124]= LSB(NTADR_A(5,2));
-	list[125]= 0x30+(sco/10)%100;
+	list[125]= 0x30+(sco/10)%10;
 	list[126]= MSB(NTADR_A(4,2));
 	list[127]= LSB(NTADR_A(4,2));
 	list[128]= 0x30+(sco/100);
@@ -287,7 +286,7 @@ void main(void)
 		
 		 if(wait>wait_max)
 		{
-			set_rand(compteur);
+			//set_rand(compteur);
 			if(tir_y < 3) tir_y--;
 			if(tir_oeuf_y >0) tir_oeuf_y++;
 			for(i=0;i<2;i++)
@@ -297,9 +296,9 @@ void main(void)
 				if(oeuf[i*3]==5&&oeuf[i*3+2]==2)oeuf[i*3+2]=1;
 				if(oeuf[i*3]<6&&oeuf[i*3+2]==1)oeuf[i*3]--;
 				if(oeuf[i*3]<6&&oeuf[i*3+2]==2)oeuf[i*3]++;
-				if(6==oeuf[i*3]&& rand16()==1)oeuf[i*3]--;
+				if(6==oeuf[i*3]&& (rand8()%10)==1)oeuf[i*3]--;
 				if(6==oeuf[i*3])oeuf[i*3]--;
-				if(tir_oeuf_y==0&&oeuf[i*3]!=6&&(rand16()%4)==1)
+				if(tir_oeuf_y==0&&oeuf[i*3]!=6&&(rand8()%10)==1)
 				{
 					tir_oeuf_y++;
 					tir_oeuf_x= oeuf[i*3];
