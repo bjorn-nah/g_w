@@ -4,6 +4,8 @@
 
 #include "neslib.h"
 #include "g_w.h"
+#include "rand.h"
+
 
 static unsigned int i;
 static unsigned int pos_lapin,pos_lapin_old, wait, wait_max, tir_x, tir_y,tir_y_old, score, compteur;
@@ -209,14 +211,14 @@ void efface_tir_o(unsigned int pos_x,unsigned int pos_y)
 
 void put_score(const int sco)
 {
-	list[120]= MSB(NTADR_A(6,2));
-	list[121]= LSB(NTADR_A(6,2));
+	list[120]= MSB(NTADR_A(21,9));
+	list[121]= LSB(NTADR_A(21,9));
 	list[122]= 0x30+(sco%10);
-	list[123]= MSB(NTADR_A(5,2));
-	list[124]= LSB(NTADR_A(5,2));
+	list[123]= MSB(NTADR_A(20,9));
+	list[124]= LSB(NTADR_A(20,9));
 	list[125]= 0x30+(sco/10)%10;
-	list[126]= MSB(NTADR_A(4,2));
-	list[127]= LSB(NTADR_A(4,2));
+	list[126]= MSB(NTADR_A(19,9));
+	list[127]= LSB(NTADR_A(19,9));
 	list[128]= 0x30+(sco/100);
 }
 
@@ -296,9 +298,8 @@ void main(void)
 				if(oeuf[i*3]==5&&oeuf[i*3+2]==2)oeuf[i*3+2]=1;
 				if(oeuf[i*3]<6&&oeuf[i*3+2]==1)oeuf[i*3]--;
 				if(oeuf[i*3]<6&&oeuf[i*3+2]==2)oeuf[i*3]++;
-				if(6==oeuf[i*3]&& (rand8()%10)==1)oeuf[i*3]--;
-				if(6==oeuf[i*3])oeuf[i*3]--;
-				if(tir_oeuf_y==0&&oeuf[i*3]!=6&&(rand8()%10)==1)
+				if(6==oeuf[i*3]&& (rand()%5)==1)oeuf[i*3]--;
+				if(tir_oeuf_y==0&&oeuf[i*3]!=6&&(rand()%5)==1)
 				{
 					tir_oeuf_y++;
 					tir_oeuf_x= oeuf[i*3];
