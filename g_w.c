@@ -7,7 +7,7 @@
 #include "rand.h"
 
 
-static unsigned int i;
+static unsigned int i, calc;
 static unsigned int pos_lapin,pos_lapin_old, wait, wait_max, tir_x, tir_y,tir_y_old, score, compteur;
 static unsigned int tir_oeuf_x, tir_oeuf_y,tir_oeuf_y_old,hit_lapin;
 static unsigned char pad, move;
@@ -21,7 +21,7 @@ static unsigned char list[5*4*3*2+9+1];
 // oeuf 2 : 4 tules x (x,y,id_tule)
 
 // on verra plus tard
-// tir : 4 tules x (x,y,id_tule)
+// tir : 4 tules x (x,y,id_tule)f
 
 const unsigned char palBackground[16]={ 0x0f,0x38,0x17,0x28,0x0f,0x18,0x28,0x38,0x0f,0x28,0x11,0x38,0x0f,0x1c,0x2c,0x3c };
 
@@ -35,6 +35,22 @@ static unsigned int oeuf[6]={6,6,1,6,6,1};
 
 void place_lapin(unsigned int pos_lapin)
 {
+	list[12]= MSB(NTADR_A(10+(pos_lapin*2),16));
+	list[13]= LSB(NTADR_A(10+(pos_lapin*2),16));
+	list[15]= MSB(NTADR_A(11+(pos_lapin*2),16));
+	list[16]= LSB(NTADR_A(11+(pos_lapin*2),16));
+	list[18]= MSB(NTADR_A(10+(pos_lapin*2),17));
+	list[19]= LSB(NTADR_A(10+(pos_lapin*2),17));
+	list[21]= MSB(NTADR_A(11+(pos_lapin*2),17));
+	list[22]= LSB(NTADR_A(11+(pos_lapin*2),17));
+	list[14]=0x00;
+	list[17]=0x01;
+	list[20]=0x02;
+	list[23]=0x03;
+} 
+
+void efface_lapin(unsigned int pos_lapin)
+{
 	list[0]= MSB(NTADR_A(10+(pos_lapin*2),16));
 	list[1]= LSB(NTADR_A(10+(pos_lapin*2),16));
 	list[3]= MSB(NTADR_A(11+(pos_lapin*2),16));
@@ -43,13 +59,13 @@ void place_lapin(unsigned int pos_lapin)
 	list[7]= LSB(NTADR_A(10+(pos_lapin*2),17));
 	list[9]= MSB(NTADR_A(11+(pos_lapin*2),17));
 	list[10]= LSB(NTADR_A(11+(pos_lapin*2),17));
-	list[2]=0x00;
-	list[5]=0x01;
-	list[8]=0x02;
-	list[11]=0x03;
-} 
+	list[2]=0x20;
+	list[5]=0x21;
+	list[8]=0x22;
+	list[11]=0x23;
+}
 
-void efface_lapin(unsigned int pos_lapin)
+void mort_lapin(unsigned int pos_lapin)
 {
 	list[12]= MSB(NTADR_A(10+(pos_lapin*2),16));
 	list[13]= LSB(NTADR_A(10+(pos_lapin*2),16));
@@ -59,29 +75,13 @@ void efface_lapin(unsigned int pos_lapin)
 	list[19]= LSB(NTADR_A(10+(pos_lapin*2),17));
 	list[21]= MSB(NTADR_A(11+(pos_lapin*2),17));
 	list[22]= LSB(NTADR_A(11+(pos_lapin*2),17));
-	list[14]=0x20;
-	list[17]=0x21;
-	list[20]=0x22;
-	list[23]=0x23;
-}
-
-void mort_lapin(unsigned int pos_lapin)
-{
-	list[0]= MSB(NTADR_A(10+(pos_lapin*2),16));
-	list[1]= LSB(NTADR_A(10+(pos_lapin*2),16));
-	list[3]= MSB(NTADR_A(11+(pos_lapin*2),16));
-	list[4]= LSB(NTADR_A(11+(pos_lapin*2),16));
-	list[6]= MSB(NTADR_A(10+(pos_lapin*2),17));
-	list[7]= LSB(NTADR_A(10+(pos_lapin*2),17));
-	list[9]= MSB(NTADR_A(11+(pos_lapin*2),17));
-	list[10]= LSB(NTADR_A(11+(pos_lapin*2),17));
-	list[2]=0x04;
-	list[5]=0x05;
-	list[8]=0x06;
-	list[11]=0x07;
+	list[14]=0x04;
+	list[17]=0x05;
+	list[20]=0x06;
+	list[23]=0x07;
 } 
 
-void place_oeuf(unsigned int pos,unsigned int num)
+void efface_oeuf(unsigned int pos,unsigned int num)
 {
 	list[24+(12*num)]= MSB(NTADR_A(10+(pos*2),10));
 	list[25+(12*num)]= LSB(NTADR_A(10+(pos*2),10));
@@ -91,12 +91,46 @@ void place_oeuf(unsigned int pos,unsigned int num)
 	list[31+(12*num)]= LSB(NTADR_A(10+(pos*2),11));
 	list[33+(12*num)]= MSB(NTADR_A(11+(pos*2),11));
 	list[34+(12*num)]= LSB(NTADR_A(11+(pos*2),11));
-	list[26+(12*num)]=0x0c;
-	list[29+(12*num)]=0x0d;
-	list[32+(12*num)]=0x0e;
-	list[35+(12*num)]=0x0f;
+	list[26+(12*num)]=0x24;
+	list[29+(12*num)]=0x25;
+	list[32+(12*num)]=0x26;
+	list[35+(12*num)]=0x27;
+	
 } 
 
+void oeuf_gueule_1(unsigned int pos,unsigned int num)
+{
+	list[48+(12*num)]= MSB(NTADR_A(10+(pos*2),10));
+	list[49+(12*num)]= LSB(NTADR_A(10+(pos*2),10));
+	list[51+(12*num)]= MSB(NTADR_A(11+(pos*2),10));
+	list[52+(12*num)]= LSB(NTADR_A(11+(pos*2),10));
+	list[54+(12*num)]= MSB(NTADR_A(10+(pos*2),11));
+	list[55+(12*num)]= LSB(NTADR_A(10+(pos*2),11));
+	list[57+(12*num)]= MSB(NTADR_A(11+(pos*2),11));
+	list[58+(12*num)]= LSB(NTADR_A(11+(pos*2),11));
+	list[50+(12*num)]=0x10;
+	list[53+(12*num)]=0x11;
+	list[56+(12*num)]=0x12;
+	list[59+(12*num)]=0x13;
+} 
+
+void oeuf_gueule_2(unsigned int pos,unsigned int num)
+{
+	list[48+(12*num)]= MSB(NTADR_A(10+(pos*2),10));
+	list[49+(12*num)]= LSB(NTADR_A(10+(pos*2),10));
+	list[51+(12*num)]= MSB(NTADR_A(11+(pos*2),10));
+	list[52+(12*num)]= LSB(NTADR_A(11+(pos*2),10));
+	list[54+(12*num)]= MSB(NTADR_A(10+(pos*2),11));
+	list[55+(12*num)]= LSB(NTADR_A(10+(pos*2),11));
+	list[57+(12*num)]= MSB(NTADR_A(11+(pos*2),11));
+	list[58+(12*num)]= LSB(NTADR_A(11+(pos*2),11));
+	list[50+(12*num)]=0x14;
+	list[53+(12*num)]=0x15;
+	list[56+(12*num)]=0x16;
+	list[59+(12*num)]=0x17;
+} 
+
+/*
 void oeuf_gueule_1(unsigned int pos,unsigned int num)
 {
 	list[24+(12*num)]= MSB(NTADR_A(10+(pos*2),10));
@@ -128,8 +162,9 @@ void oeuf_gueule_2(unsigned int pos,unsigned int num)
 	list[32+(12*num)]=0x16;
 	list[35+(12*num)]=0x17;
 } 
+*/
 
-void efface_oeuf(unsigned int pos,unsigned int num)
+void place_oeuf(unsigned int pos,unsigned int num)
 {
 	list[48+(12*num)]= MSB(NTADR_A(10+(pos*2),10));
 	list[49+(12*num)]= LSB(NTADR_A(10+(pos*2),10));
@@ -139,13 +174,13 @@ void efface_oeuf(unsigned int pos,unsigned int num)
 	list[55+(12*num)]= LSB(NTADR_A(10+(pos*2),11));
 	list[57+(12*num)]= MSB(NTADR_A(11+(pos*2),11));
 	list[58+(12*num)]= LSB(NTADR_A(11+(pos*2),11));
-	list[50+(12*num)]=0x24;
-	list[53+(12*num)]=0x25;
-	list[56+(12*num)]=0x26;
-	list[59+(12*num)]=0x27;
+	list[50+(12*num)]=0x0c;
+	list[53+(12*num)]=0x0d;
+	list[56+(12*num)]=0x0e;
+	list[59+(12*num)]=0x0f;
 } 
 
-void place_tir(unsigned int pos_x,unsigned int pos_y)
+void efface_tir(unsigned int pos_x,unsigned int pos_y)
 {
 	list[72]= MSB(NTADR_A(pos_x,pos_y));
 	list[73]= LSB(NTADR_A(pos_x,pos_y));
@@ -155,13 +190,13 @@ void place_tir(unsigned int pos_x,unsigned int pos_y)
 	list[79]= LSB(NTADR_A(pos_x,pos_y+1));
 	list[81]= MSB(NTADR_A(pos_x+1,pos_y+1));
 	list[82]= LSB(NTADR_A(pos_x+1,pos_y+1));
-	list[74]=0x18;
-	list[77]=0x19;
-	list[80]=0x1a;
-	list[83]=0x1b;
+	list[74]=0x28;
+	list[77]=0x29;
+	list[80]=0x2a;
+	list[83]=0x2b;
 } 
 
-void efface_tir(unsigned int pos_x,unsigned int pos_y)
+void efface_tir_o(unsigned int pos_x,unsigned int pos_y)
 {
 	list[84]= MSB(NTADR_A(pos_x,pos_y));
 	list[85]= LSB(NTADR_A(pos_x,pos_y));
@@ -193,7 +228,7 @@ void place_tir_o(unsigned int pos_x,unsigned int pos_y)
 	list[107]=0x1f;
 } 
 
-void efface_tir_o(unsigned int pos_x,unsigned int pos_y)
+void place_tir(unsigned int pos_x,unsigned int pos_y)
 {
 	list[108]= MSB(NTADR_A(pos_x,pos_y));
 	list[109]= LSB(NTADR_A(pos_x,pos_y));
@@ -203,10 +238,10 @@ void efface_tir_o(unsigned int pos_x,unsigned int pos_y)
 	list[115]= LSB(NTADR_A(pos_x,pos_y+1));
 	list[117]= MSB(NTADR_A(pos_x+1,pos_y+1));
 	list[118]= LSB(NTADR_A(pos_x+1,pos_y+1));
-	list[110]=0x28;
-	list[113]=0x29;
-	list[116]=0x2a;
-	list[119]=0x2b;
+	list[110]=0x18;
+	list[113]=0x19;
+	list[116]=0x1a;
+	list[119]=0x1b;
 }
 
 void put_score(const int sco)
@@ -220,6 +255,16 @@ void put_score(const int sco)
 	list[126]= MSB(NTADR_A(19,9));
 	list[127]= LSB(NTADR_A(19,9));
 	list[128]= 0x30+(sco/100);
+}
+
+void kill(unsigned int num)
+{
+	for(i=0;i<4;i++)
+	{
+		list[num+i*3] = MSB(NTADR_A(0,0));
+		list[num+i*3+1] = LSB(NTADR_A(0,0));
+		list[num+i*3+2] = 0x27;
+	}
 }
 
 void main(void)
@@ -281,7 +326,7 @@ void main(void)
 		{
 			tir_x = pos_lapin;
 			tir_y--;
-			wait =0;
+			//wait =0;
 		}
 		if(pad==0)move =0;
 		
@@ -322,6 +367,7 @@ void main(void)
 				}
 			}			
 			tir_y =3;
+			kill(108); // supprimer l'affichage du tir
 			tir_y_old =tir_y;
 		}
 		if(tir_oeuf_y == 3)
@@ -333,6 +379,7 @@ void main(void)
 				hit_lapin=1;
 				wait_max =60;
 			}
+			kill(96); // supprimer l'affichage du tir
 			tir_oeuf_y=0;
 		}
 		
@@ -345,10 +392,9 @@ void main(void)
 		}
 		if(tir_y!=tir_y_old)
 		{
-			// place_tir(tir_x,tir_y);
+			if(tir_y_old <3) efface_tir(10+(tir_x*2),10+(tir_y_old*2));
 			place_tir(10+(tir_x*2),10+(tir_y*2));
 			//list[(tir_x+(tir_y*6))*3+2]=0x05;
-			if(tir_y <2) efface_tir(10+(tir_x*2),10+(tir_y_old*2));
 			//list[(tir_x+(tir_y_old*6))*3+2]=0x0B;
 			tir_y_old=tir_y;
 		}
@@ -367,10 +413,14 @@ void main(void)
 		{
 			if(oeuf[i*3]!=oeuf[i*3+1])
 			{
-				place_oeuf(oeuf[i*3],i);
-				// list[oeuf[i*3]*3+2]=0x02;
 				if(oeuf[i*3+1]!=6) efface_oeuf(oeuf[i*3+1],i);
-				// list[oeuf[i*3+1]*3+2]=0x08;
+			}
+		}
+		for(i=0;i<2;i++)
+		{
+			if(oeuf[i*3]!=oeuf[i*3+1])
+			{
+				place_oeuf(oeuf[i*3],i);
 				oeuf[i*3+1]=oeuf[i*3];
 			}
 		}
@@ -395,6 +445,8 @@ void main(void)
 				oeuf[i*3]=6;
 				oeuf[i*3+1]=6;
 				oeuf[i*3+2]=1;
+				calc = 48 + 12 * i;
+				kill(calc); //supprimer l'affichage de l'oeuf i
 			}
 		}
 		if(hit_lapin==1&&(wait%2)==0)
