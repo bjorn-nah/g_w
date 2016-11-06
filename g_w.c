@@ -9,7 +9,7 @@
 
 static unsigned int i, calc;
 static unsigned int pos_lapin,pos_lapin_old, wait, wait_max, tir_x, tir_y,tir_y_old, score, compteur;
-static unsigned int tir_oeuf_x, tir_oeuf_y,tir_oeuf_y_old,hit_lapin;
+static unsigned int tir_oeuf_x, tir_oeuf_y ,tir_oeuf_y_old, hit_lapin, vie_lapin;
 static unsigned char pad, move;
 
 //put a string into the nametable
@@ -23,12 +23,9 @@ static unsigned char list[5*4*3*2+9+1];
 // on verra plus tard
 // tir : 4 tules x (x,y,id_tule)f
 
-const unsigned char palBackground[16]={ 0x0f,0x38,0x17,0x28,0x0f,0x18,0x28,0x38,0x0f,0x28,0x11,0x38,0x0f,0x1c,0x2c,0x3c };
-
-
+const unsigned char palBackground[16]={ 0x0f,0x38,0x11,0x28,0x0f,0x18,0x28,0x38,0x0f,0x28,0x11,0x38,0x0f,0x1c,0x2c,0x3c };
 
 static unsigned int oeuf[6]={6,6,1,6,6,1};
-
 
 //init data for the update list, it contains MSB and LSB of a tile address
 //in the nametable, then the tile number
@@ -130,40 +127,6 @@ void oeuf_gueule_2(unsigned int pos,unsigned int num)
 	list[59+(12*num)]=0x17;
 } 
 
-/*
-void oeuf_gueule_1(unsigned int pos,unsigned int num)
-{
-	list[24+(12*num)]= MSB(NTADR_A(10+(pos*2),10));
-	list[25+(12*num)]= LSB(NTADR_A(10+(pos*2),10));
-	list[27+(12*num)]= MSB(NTADR_A(11+(pos*2),10));
-	list[28+(12*num)]= LSB(NTADR_A(11+(pos*2),10));
-	list[30+(12*num)]= MSB(NTADR_A(10+(pos*2),11));
-	list[31+(12*num)]= LSB(NTADR_A(10+(pos*2),11));
-	list[33+(12*num)]= MSB(NTADR_A(11+(pos*2),11));
-	list[34+(12*num)]= LSB(NTADR_A(11+(pos*2),11));
-	list[26+(12*num)]=0x10;
-	list[29+(12*num)]=0x11;
-	list[32+(12*num)]=0x12;
-	list[35+(12*num)]=0x13;
-} 
-
-void oeuf_gueule_2(unsigned int pos,unsigned int num)
-{
-	list[24+(12*num)]= MSB(NTADR_A(10+(pos*2),10));
-	list[25+(12*num)]= LSB(NTADR_A(10+(pos*2),10));
-	list[27+(12*num)]= MSB(NTADR_A(11+(pos*2),10));
-	list[28+(12*num)]= LSB(NTADR_A(11+(pos*2),10));
-	list[30+(12*num)]= MSB(NTADR_A(10+(pos*2),11));
-	list[31+(12*num)]= LSB(NTADR_A(10+(pos*2),11));
-	list[33+(12*num)]= MSB(NTADR_A(11+(pos*2),11));
-	list[34+(12*num)]= LSB(NTADR_A(11+(pos*2),11));
-	list[26+(12*num)]=0x14;
-	list[29+(12*num)]=0x15;
-	list[32+(12*num)]=0x16;
-	list[35+(12*num)]=0x17;
-} 
-*/
-
 void place_oeuf(unsigned int pos,unsigned int num)
 {
 	list[48+(12*num)]= MSB(NTADR_A(10+(pos*2),10));
@@ -244,17 +207,38 @@ void place_tir(unsigned int pos_x,unsigned int pos_y)
 	list[119]=0x1b;
 }
 
-void put_score(const int sco)
+void put_score(const int sco,const int vie,const int frame)
 {
-	list[120]= MSB(NTADR_A(21,9));
-	list[121]= LSB(NTADR_A(21,9));
-	list[122]= 0x30+(sco%10);
-	list[123]= MSB(NTADR_A(20,9));
-	list[124]= LSB(NTADR_A(20,9));
-	list[125]= 0x30+(sco/10)%10;
-	list[126]= MSB(NTADR_A(19,9));
-	list[127]= LSB(NTADR_A(19,9));
-	list[128]= 0x30+(sco/100);
+	if(frame%5==0)
+	{
+		list[120]= MSB(NTADR_A(21,9));
+		list[121]= LSB(NTADR_A(21,9));
+		list[122]= 0x30+(sco%10);
+	}
+	if(frame%5==1)
+	{
+		list[120]= MSB(NTADR_A(20,9));
+		list[121]= LSB(NTADR_A(20,9));
+		list[122]= 0x30+(sco/10)%10;
+	}
+	if(frame%5==2)
+	{
+		list[120]= MSB(NTADR_A(19,9));
+		list[121]= LSB(NTADR_A(19,9));
+		list[122]= 0x30+(sco/100);
+	}
+	if(frame%5==3)
+	{
+		list[120]= MSB(NTADR_A(18,9));
+		list[121]= LSB(NTADR_A(18,9));
+		list[122]= 0x30+(sco/1000);
+	}
+	if(frame%5==4)
+	{
+		list[120]= MSB(NTADR_A(11,9));
+		list[121]= LSB(NTADR_A(11,9));
+		list[122]= 0x30+(vie%10);
+	}
 }
 
 void kill(unsigned int num)
@@ -297,6 +281,7 @@ void main(void)
 	wait_max = 60;
 	score = 0;
 	compteur = 0;
+	vie_lapin = 3;
 	
 	// set le premier lapin
 	place_lapin(pos_lapin);
@@ -329,7 +314,7 @@ void main(void)
 			//wait =0;
 		}
 		if(pad==0)move =0;
-		
+		put_score(score,vie_lapin,wait);
 		
 		 if(wait>wait_max)
 		{
@@ -344,13 +329,12 @@ void main(void)
 				if(oeuf[i*3]<6&&oeuf[i*3+2]==1)oeuf[i*3]--;
 				if(oeuf[i*3]<6&&oeuf[i*3+2]==2)oeuf[i*3]++;
 				if(6==oeuf[i*3]&& (rand()%5)==1)oeuf[i*3]--;
-				if(tir_oeuf_y==0&&oeuf[i*3]!=6&&(rand()%5)==1)
+				if(tir_oeuf_y==0&&oeuf[i*3]!=6&&(rand()%5)==1&&oeuf[i*3+2]==1)
 				{
 					tir_oeuf_y++;
 					tir_oeuf_x= oeuf[i*3];
 				}
 			}
-			put_score(score);
 			wait =0;
 		}
 		if(tir_y == 0)
@@ -369,6 +353,7 @@ void main(void)
 			tir_y =3;
 			kill(108); // supprimer l'affichage du tir
 			tir_y_old =tir_y;
+			srand(compteur);
 		}
 		if(tir_oeuf_y == 3)
 		{
@@ -468,6 +453,13 @@ void main(void)
 			place_lapin(pos_lapin);
 			pos_lapin_old=0;
 			hit_lapin = 0;
+			if(vie_lapin==0)
+			{
+				vie_lapin=3;
+				score=0;
+			}
+			else
+				vie_lapin--;
 		}
 	}
 
