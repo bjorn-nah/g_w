@@ -8,9 +8,9 @@
 
 
 static unsigned int i, calc;
-static unsigned int pos_lapin,pos_lapin_old, wait, wait_max, tir_x, tir_y,tir_y_old, score, compteur;
+static unsigned int pos_lapin,pos_lapin_old, wait, wait_max, tir_x, tir_y,tir_y_old, score, hi_score, compteur;
 static unsigned int tir_oeuf_x, tir_oeuf_y ,tir_oeuf_y_old, hit_lapin, vie_lapin;
-static unsigned char pad, move;
+static unsigned char pad, move, mode;
 
 //put a string into the nametable
 
@@ -279,9 +279,12 @@ void main(void)
 	wait = 0;
 	move = 0;
 	wait_max = 60;
+	
 	score = 0;
+	hi_score = 0;
 	compteur = 0;
 	vie_lapin = 3;
+	mode = 0;
 	
 	// set le premier lapin
 	place_lapin(pos_lapin);
@@ -297,24 +300,58 @@ void main(void)
 		wait++;
 		compteur++;
 
-		if(pad&PAD_LEFT && pos_lapin>  0 && move ==0&&hit_lapin==0)
+		if(mode==1)
 		{
-			pos_lapin--;
-			move =1;
+			if(pad&PAD_LEFT && pos_lapin>  0 && move ==0&&hit_lapin==0)
+			{
+				pos_lapin--;
+				move =1;
+			}
+			if(pad&PAD_RIGHT && pos_lapin<  5&& move ==0&&hit_lapin==0)
+			{
+				pos_lapin++;
+				move =1;
+			}
+			if(pad&PAD_A && tir_y ==3&&hit_lapin==0)
+			{
+				tir_x = pos_lapin;
+				tir_y--;
+				//wait =0;
+			}
+			if(pad==0)move =0;
+			put_score(score,vie_lapin,wait);
 		}
-		if(pad&PAD_RIGHT && pos_lapin<  5&& move ==0&&hit_lapin==0)
+		else
 		{
-			pos_lapin++;
-			move =1;
+			if(wait==2)
+			{
+				put_score(hi_score,vie_lapin,wait);
+				i=(rand()%4);
+				if(i==1&& pos_lapin>  0&&hit_lapin==0)pos_lapin--;
+				if(i==2&& pos_lapin<  5&&hit_lapin==0)pos_lapin++;
+				if(i==3&& tir_y ==3&&hit_lapin==0)
+				{
+					tir_x = pos_lapin;
+					tir_y--;
+				}
+			}
+			if(pad&PAD_START)
+			{
+				mode = 1;
+				pos_lapin=0;
+				pos_lapin_old = pos_lapin;
+				tir_x = 0;
+				tir_y = 3;
+				tir_y_old = tir_y;
+				tir_oeuf_x = 0;
+				tir_oeuf_y = 0;
+				tir_oeuf_y_old = tir_oeuf_y;
+				wait = 0;
+				move = 0;
+				score = 0;
+				vie_lapin = 3;
+			}
 		}
-		if(pad&PAD_A && tir_y ==3&&hit_lapin==0)
-		{
-			tir_x = pos_lapin;
-			tir_y--;
-			//wait =0;
-		}
-		if(pad==0)move =0;
-		put_score(score,vie_lapin,wait);
 		
 		 if(wait>wait_max)
 		{
@@ -346,8 +383,8 @@ void main(void)
 				if(oeuf[i*3]==tir_x)
 				{
 					oeuf[i*3+2]=3;
-					score++;
-					if(wait_max>10)wait_max-=2;
+					if(mode==1)score++;
+					if(wait_max>10)wait_max-=2; 
 				}
 			}			
 			tir_y =3;
@@ -453,13 +490,13 @@ void main(void)
 			place_lapin(pos_lapin);
 			pos_lapin_old=0;
 			hit_lapin = 0;
-			if(vie_lapin==0)
+			if(vie_lapin==0 && mode==1)
 			{
-				vie_lapin=3;
+				if(hi_score<score) hi_score = score;
 				score=0;
+				mode=0;
 			}
-			else
-				vie_lapin--;
+			if(vie_lapin>0 && mode==1)vie_lapin--;
 		}
 	}
 
