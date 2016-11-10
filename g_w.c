@@ -10,7 +10,7 @@
 static unsigned int i, calc;
 static unsigned int pos_lapin,pos_lapin_old, wait, wait_max, tir_x, tir_y,tir_y_old, score, hi_score, compteur;
 static unsigned int tir_oeuf_x, tir_oeuf_y ,tir_oeuf_y_old, hit_lapin, vie_lapin;
-static unsigned char pad, move, mode;
+static unsigned char pad, move, mode, hi_tule;
 
 //put a string into the nametable
 
@@ -207,37 +207,43 @@ void place_tir(unsigned int pos_x,unsigned int pos_y)
 	list[119]=0x1b;
 }
 
-void put_score(const int sco,const int vie,const int frame)
+void put_score(const int sco,const int vie,const char hi,const int frame)
 {
-	if(frame%5==0)
+	if(frame%6==0)
 	{
 		list[120]= MSB(NTADR_A(21,9));
 		list[121]= LSB(NTADR_A(21,9));
 		list[122]= 0x30+(sco%10);
 	}
-	if(frame%5==1)
+	if(frame%6==1)
 	{
 		list[120]= MSB(NTADR_A(20,9));
 		list[121]= LSB(NTADR_A(20,9));
 		list[122]= 0x30+(sco/10)%10;
 	}
-	if(frame%5==2)
+	if(frame%6==2)
 	{
 		list[120]= MSB(NTADR_A(19,9));
 		list[121]= LSB(NTADR_A(19,9));
 		list[122]= 0x30+(sco/100);
 	}
-	if(frame%5==3)
+	if(frame%6==3)
 	{
 		list[120]= MSB(NTADR_A(18,9));
 		list[121]= LSB(NTADR_A(18,9));
 		list[122]= 0x30+(sco/1000);
 	}
-	if(frame%5==4)
+	if(frame%6==4)
 	{
 		list[120]= MSB(NTADR_A(11,9));
 		list[121]= LSB(NTADR_A(11,9));
 		list[122]= 0x30+(vie%10);
+	}
+	if(frame%6==5)
+	{
+		list[120]= MSB(NTADR_A(13,9));
+		list[121]= LSB(NTADR_A(13,9));
+		list[122]= hi;
 	}
 }
 
@@ -319,13 +325,12 @@ void main(void)
 				//wait =0;
 			}
 			if(pad==0)move =0;
-			put_score(score,vie_lapin,wait);
+			put_score(score,vie_lapin,0x2e,wait);
 		}
 		else
 		{
 			if(wait==2)
 			{
-				put_score(hi_score,vie_lapin,wait);
 				i=(rand()%4);
 				if(i==1&& pos_lapin>  0&&hit_lapin==0)pos_lapin--;
 				if(i==2&& pos_lapin<  5&&hit_lapin==0)pos_lapin++;
@@ -335,6 +340,7 @@ void main(void)
 					tir_y--;
 				}
 			}
+			put_score(hi_score,vie_lapin,0x2d,wait);
 			if(pad&PAD_START)
 			{
 				mode = 1;
