@@ -247,6 +247,44 @@ void put_score(const int sco,const int vie,const char hi,const int frame)
 	}
 }
 
+// void put_debug(const int debug1,const int debug2,const int frame)
+// {
+	// if(frame%6==0)
+	// {
+		// list[123]= MSB(NTADR_A(2,2));
+		// list[124]= LSB(NTADR_A(2,2));
+		// list[125]= 0x30+(debug1%10);
+	// }
+	// if(frame%6==1)
+	// {
+		// list[123]= MSB(NTADR_A(1,2));
+		// list[124]= LSB(NTADR_A(1,2));
+		// list[125]= 0x30+(debug1/10)%10;
+	// }
+	// if(frame%6==2)
+	// {
+		// list[123]= MSB(NTADR_A(2,3));
+		// list[124]= LSB(NTADR_A(2,3));
+		// list[125]= 0x30+(debug2%10);
+	// }
+	// if(frame%6==3)
+	// {
+		// list[123]= MSB(NTADR_A(1,3));
+		// list[124]= LSB(NTADR_A(1,3));
+		// list[125]= 0x30+(debug2/10)%10;
+	// }
+// }
+void put_debug(const int debug1,const int debug2)
+{
+	list[123]= MSB(NTADR_A(2,2));
+	list[124]= LSB(NTADR_A(2,2));
+	list[125]= 0x30+(debug1%10);
+	list[126]= MSB(NTADR_A(2,3));
+	list[127]= LSB(NTADR_A(2,3));
+	list[128]= 0x30+(debug2%10);
+	
+}
+
 void kill(unsigned int num)
 {
 	for(i=0;i<4;i++)
@@ -289,7 +327,7 @@ void main(void)
 	score = 0;
 	hi_score = 0;
 	compteur = 0;
-	vie_lapin = 3;
+	vie_lapin = 0;
 	mode = 0;
 	
 	// set le premier lapin
@@ -329,7 +367,7 @@ void main(void)
 		}
 		else
 		{
-			if(wait==2)
+			if(wait==1)
 			{
 				i=(rand()%4);
 				if(i==1&& pos_lapin>  0&&hit_lapin==0)pos_lapin--;
@@ -341,22 +379,31 @@ void main(void)
 				}
 			}
 			put_score(hi_score,vie_lapin,0x2d,wait);
-			if(pad&PAD_START)
-			{
-				mode = 1;
-				pos_lapin=0;
-				pos_lapin_old = pos_lapin;
-				tir_x = 0;
-				tir_y = 3;
-				tir_y_old = tir_y;
-				tir_oeuf_x = 0;
-				tir_oeuf_y = 0;
-				tir_oeuf_y_old = tir_oeuf_y;
-				wait = 0;
-				move = 0;
-				score = 0;
-				vie_lapin = 3;
-			}
+			// if(pad&PAD_START)
+			// {
+				// mode = 1;
+				// efface_lapin(pos_lapin_old);
+				// efface_tir(10+(tir_x*2),10+(tir_y_old*2));
+				// efface_tir_o(10+(tir_oeuf_x*2),10+(tir_oeuf_y_old*2));
+				// for(i=0;i<2;i++)
+				// {
+					// if(oeuf[i*3+1]!=6) efface_oeuf(oeuf[i*3+1],i);
+					// oeuf[i*3] = 6;
+					// oeuf[i*3+1] = 6;
+				// }	
+				// pos_lapin=0;
+				// pos_lapin_old = pos_lapin;
+				// tir_x = 0;
+				// tir_y = 3;
+				// tir_y_old = tir_y;
+				// tir_oeuf_x = 0;
+				// tir_oeuf_y = 0;
+				// tir_oeuf_y_old = tir_oeuf_y;
+				// wait = 0;
+				// move = 0;
+				// score = 0;
+				// vie_lapin = 3;
+			// }
 		}
 		
 		 if(wait>wait_max)
@@ -503,6 +550,40 @@ void main(void)
 				mode=0;
 			}
 			if(vie_lapin>0 && mode==1)vie_lapin--;
+		}
+		if(mode == 0 && pad&PAD_START)
+		{
+			mode = 1;
+			efface_lapin(pos_lapin);
+			efface_tir(10+(tir_x*2),10+(tir_y*2));
+			kill(108); // supprimer l'affichage du tir
+			efface_tir_o(10+(tir_oeuf_x*2),10+(tir_oeuf_y*2));
+			kill(96);
+			for(i=0;i<2;i++)
+			{
+				if(oeuf[i*3]!=6)
+				{
+					efface_oeuf(oeuf[i*3],i);
+					oeuf[i*3] = 6;
+					oeuf[i*3+1] = 6;
+					oeuf[i*3+2] = 6;
+					calc = 48 + 12 * i;
+					kill(calc); //supprimer l'affichage de l'oeuf i
+				}
+			}
+			pos_lapin=0;
+			pos_lapin_old = pos_lapin;
+			tir_x = 0;
+			tir_y = 3;
+			tir_y_old = tir_y;
+			tir_oeuf_x = 0;
+			tir_oeuf_y = 0;
+			tir_oeuf_y_old = tir_oeuf_y;
+			wait = 0;
+			move = 0;
+			score = 0;
+			vie_lapin = 3;
+			place_lapin(pos_lapin);
 		}
 	}
 
