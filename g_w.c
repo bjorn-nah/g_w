@@ -10,6 +10,7 @@
 static unsigned int i, calc;
 static unsigned int pos_lapin,pos_lapin_old, wait, wait_max, tir_x, tir_y,tir_y_old, score, hi_score, compteur;
 static unsigned int tir_oeuf_x, tir_oeuf_y ,tir_oeuf_y_old, hit_lapin, vie_lapin;
+static unsigned int state_sprite;
 static unsigned char pad, move, mode, hi_tule;
 
 //put a string into the nametable
@@ -294,6 +295,152 @@ void kill(unsigned int num)
 		list[num+i*3+2] = 0x27;
 	}
 }
+// player
+void player_sprite_0()
+{
+	if(pad&PAD_LEFT && pos_lapin>  0 &&hit_lapin==0)
+	{
+		pos_lapin--;
+		state_sprite =1;
+	}
+	if(pad&PAD_RIGHT && pos_lapin<  5&&hit_lapin==0)
+	{
+		pos_lapin++;
+		state_sprite =1;
+	}
+	if(pad&PAD_A && tir_y ==3&&hit_lapin==0)
+	{
+		tir_x = pos_lapin;
+		tir_y--;
+		state_sprite =2;
+		//wait =0;
+	}
+}
+void player_sprite_1()
+{
+	if(pad==0)state_sprite =0;
+}
+void player_sprite_2()
+{
+	if(pad==0)state_sprite =0;
+}
+void player_sprite_3()
+{
+	mort_lapin(pos_lapin);
+	if((wait%2)==0)state_sprite =4;
+}
+void player_sprite_4()
+{
+	place_lapin(pos_lapin);
+	if((wait%2)==0)state_sprite =3;
+}
+void player_machine()
+{
+/*
+	0 - Repos
+	1 - Déplacement
+	2 - tir
+	3 - Meurt 1
+	4 - Meurt 2
+*/
+	if ( state_sprite == 0) player_sprite_0();
+	if ( state_sprite == 1) player_sprite_1();
+	if ( state_sprite == 2) player_sprite_2();
+	if ( state_sprite == 3) player_sprite_3();
+	if ( state_sprite == 4) player_sprite_4();
+	
+}
+void player_random()
+{
+	if ( state_sprite == 0) 
+	{
+		i=(rand()%4);
+		if(i==1&& pos_lapin>  0)
+		{
+			pos_lapin--;
+			state_sprite =1;
+		}
+		if(i==2&& pos_lapin<  5)
+		{
+			pos_lapin++;
+			state_sprite =1;
+		}
+		if(i==3&& tir_y ==3)
+		{
+			tir_x = pos_lapin;
+			tir_y--;
+			state_sprite =2;
+		}
+	}
+	if ( state_sprite == 1) state_sprite =0;
+	if ( state_sprite == 2) state_sprite =0;
+	if ( state_sprite == 3) player_sprite_3();
+	if ( state_sprite == 4) player_sprite_4();
+	
+}
+// ennemis
+void ennemi_sprite_0(unsigned int i)
+{
+	if((rand()%5)==1)
+	{
+		oeuf[i*3]--;
+		oeuf[i*3+2]=1;
+	}
+}
+void ennemi_sprite_1(unsigned int i)
+{
+	if(oeuf[i*3]==0)
+		oeuf[i*3+2]=2;
+	else 
+		oeuf[i*3]--;
+	if(tir_oeuf_y==0&&oeuf[i*3]!=6&&(rand()%5)==1)
+	{
+		tir_oeuf_y++;
+		tir_oeuf_x= oeuf[i*3];
+	}
+}
+void ennemi_sprite_2(unsigned int i)
+{
+	if(oeuf[i*3]==5)
+		oeuf[i*3+2]=1;
+	else 
+		oeuf[i*3]++;
+	if(tir_oeuf_y==0&&oeuf[i*3]!=6&&(rand()%5)==1)
+	{
+		tir_oeuf_y++;
+		tir_oeuf_x= oeuf[i*3];
+	}
+}
+void ennemi_sprite_3(unsigned int i)
+{
+	oeuf_gueule_1(oeuf[i*3+1],i);
+	if((wait%2)==0)oeuf[i*3+2]=4;
+}
+void ennemi_sprite_4(unsigned int i)
+{
+	oeuf_gueule_2(oeuf[i*3+1],i);
+	if((wait%2)==0)oeuf[i*3+2]=3;
+}
+
+void ennemi_machine()
+{
+/*
+	0 - Repos
+	1 - Déplacement gauche
+	2 - Déplacement droite
+	3 - Meurt 1
+	4 - Meurt 2
+*/
+	for(i=0;i<2;i++)
+	{
+		if ( oeuf[i*3+2]==0) ennemi_sprite_0(i);
+		if ( oeuf[i*3+2]==1) ennemi_sprite_1(i);
+		if ( oeuf[i*3+2]==2) ennemi_sprite_2(i);
+		if ( oeuf[i*3+2]==3) ennemi_sprite_3(i);
+		if ( oeuf[i*3+2]==4) ennemi_sprite_4(i);
+	}
+}
+
 
 void main(void)
 {
@@ -346,7 +493,7 @@ void main(void)
 
 		if(mode==1)
 		{
-			if(pad&PAD_LEFT && pos_lapin>  0 && move ==0&&hit_lapin==0)
+			/* if(pad&PAD_LEFT && pos_lapin>  0 && move ==0&&hit_lapin==0)
 			{
 				pos_lapin--;
 				move =1;
@@ -362,13 +509,14 @@ void main(void)
 				tir_y--;
 				//wait =0;
 			}
-			if(pad==0)move =0;
+			if(pad==0)move =0; */
+			player_machine();
 			put_score(score,vie_lapin,0x2e,wait);
 		}
 		else
 		{
-			if(wait==1)
-			{
+			if(wait==1) player_random();
+/* 			{
 				i=(rand()%4);
 				if(i==1&& pos_lapin>  0&&hit_lapin==0)pos_lapin--;
 				if(i==2&& pos_lapin<  5&&hit_lapin==0)pos_lapin++;
@@ -377,7 +525,7 @@ void main(void)
 					tir_x = pos_lapin;
 					tir_y--;
 				}
-			}
+			} */
 			put_score(hi_score,vie_lapin,0x2d,wait);
 			// if(pad&PAD_START)
 			// {
@@ -411,7 +559,8 @@ void main(void)
 			//set_rand(compteur);
 			if(tir_y < 3) tir_y--;
 			if(tir_oeuf_y >0) tir_oeuf_y++;
-			for(i=0;i<2;i++)
+			ennemi_machine();
+			/* for(i=0;i<2;i++)
 			{
 				// déplacements oeufs
 				if(oeuf[i*3]==0&&oeuf[i*3+2]==1)oeuf[i*3+2]=2;
@@ -424,7 +573,7 @@ void main(void)
 					tir_oeuf_y++;
 					tir_oeuf_x= oeuf[i*3];
 				}
-			}
+			} */
 			wait =0;
 		}
 		if(tir_y == 0)
@@ -451,7 +600,8 @@ void main(void)
 			efface_tir_o(12+(tir_oeuf_x*2),10);
 			if(tir_oeuf_x==pos_lapin)
 			{
-				hit_lapin=1;
+				// hit_lapin=1;
+				state_sprite = 3;
 				wait_max =60;
 			}
 			kill(96); // supprimer l'affichage du tir
@@ -501,7 +651,7 @@ void main(void)
 		}
 		for(i=0;i<2;i++)
 		{
-			if(oeuf[i*3+2]==3&&(wait%2)==0)
+/* 			if(oeuf[i*3+2]==3&&(wait%2)==0)
 			{
 				// list[oeuf[i*3]*3+2]=0x02;
 				oeuf_gueule_1(oeuf[i*3+1],i);
@@ -512,7 +662,7 @@ void main(void)
 				// list[oeuf[i*3]*3+2]=0x04;
 				oeuf_gueule_2(oeuf[i*3+1],i);
 				oeuf[i*3+2]=3;
-			}
+			} */
 			if(oeuf[i*3+2]>2&&wait==wait_max)
 			{
 				// list[oeuf[i*3]*3+2]=0x08;
@@ -524,7 +674,7 @@ void main(void)
 				kill(calc); //supprimer l'affichage de l'oeuf i
 			}
 		}
-		if(hit_lapin==1&&(wait%2)==0)
+/* 		if(hit_lapin==1&&(wait%2)==0)
 		{
 			// list[(pos_lapin+18)*3+2]=0x03;
 			mort_lapin(pos_lapin);
@@ -535,14 +685,14 @@ void main(void)
 			// list[(pos_lapin+18)*3+2]=0x01;
 			place_lapin(pos_lapin);
 			hit_lapin=1;
-		}
-		if(hit_lapin>0&&wait==wait_max)
+		} */
+		if(state_sprite>2&&wait==wait_max)
 		{
 			efface_lapin(pos_lapin);
 			pos_lapin=0;
 			place_lapin(pos_lapin);
 			pos_lapin_old=0;
-			hit_lapin = 0;
+			state_sprite = 0;
 			if(vie_lapin==0 && mode==1)
 			{
 				if(hi_score<score) hi_score = score;
