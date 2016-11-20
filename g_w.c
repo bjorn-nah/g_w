@@ -248,33 +248,6 @@ void put_score(const int sco,const int vie,const char hi,const int frame)
 	}
 }
 
-// void put_debug(const int debug1,const int debug2,const int frame)
-// {
-	// if(frame%6==0)
-	// {
-		// list[123]= MSB(NTADR_A(2,2));
-		// list[124]= LSB(NTADR_A(2,2));
-		// list[125]= 0x30+(debug1%10);
-	// }
-	// if(frame%6==1)
-	// {
-		// list[123]= MSB(NTADR_A(1,2));
-		// list[124]= LSB(NTADR_A(1,2));
-		// list[125]= 0x30+(debug1/10)%10;
-	// }
-	// if(frame%6==2)
-	// {
-		// list[123]= MSB(NTADR_A(2,3));
-		// list[124]= LSB(NTADR_A(2,3));
-		// list[125]= 0x30+(debug2%10);
-	// }
-	// if(frame%6==3)
-	// {
-		// list[123]= MSB(NTADR_A(1,3));
-		// list[124]= LSB(NTADR_A(1,3));
-		// list[125]= 0x30+(debug2/10)%10;
-	// }
-// }
 void put_debug(const int debug1,const int debug2)
 {
 	list[123]= MSB(NTADR_A(2,2));
@@ -381,18 +354,11 @@ void player_random()
 // ennemis
 void ennemi_sprite_0(unsigned int i)
 {
-	if((rand()%5)==1)
-	{
-		oeuf[i*3]--;
-		oeuf[i*3+2]=1;
-	}
+	if((rand()%5)==1)oeuf[i*3+2]=1;
 }
 void ennemi_sprite_1(unsigned int i)
 {
-	if(oeuf[i*3]==0)
-		oeuf[i*3+2]=2;
-	else 
-		oeuf[i*3]--;
+	if(oeuf[i*3]==0)oeuf[i*3+2]=2;
 	if(tir_oeuf_y==0&&oeuf[i*3]!=6&&(rand()%5)==1)
 	{
 		tir_oeuf_y++;
@@ -401,10 +367,7 @@ void ennemi_sprite_1(unsigned int i)
 }
 void ennemi_sprite_2(unsigned int i)
 {
-	if(oeuf[i*3]==5)
-		oeuf[i*3+2]=1;
-	else 
-		oeuf[i*3]++;
+	if(oeuf[i*3]==5)oeuf[i*3+2]=1;
 	if(tir_oeuf_y==0&&oeuf[i*3]!=6&&(rand()%5)==1)
 	{
 		tir_oeuf_y++;
@@ -440,7 +403,14 @@ void ennemi_machine()
 		if ( oeuf[i*3+2]==4) ennemi_sprite_4(i);
 	}
 }
-
+void physique()
+{
+	for(i=0;i<2;i++)
+	{
+		if ( oeuf[i*3+2]==1) oeuf[i*3]--;
+		if ( oeuf[i*3+2]==2) oeuf[i*3]++;
+	}
+}
 
 void main(void)
 {
@@ -560,6 +530,7 @@ void main(void)
 			if(tir_y < 3) tir_y--;
 			if(tir_oeuf_y >0) tir_oeuf_y++;
 			ennemi_machine();
+			physique();
 			/* for(i=0;i<2;i++)
 			{
 				// déplacements oeufs
@@ -576,6 +547,8 @@ void main(void)
 			} */
 			wait =0;
 		}
+		
+		
 		if(tir_y == 0)
 		{
 			// list[(tir_x+6)*3+2]=0x0B;
@@ -639,13 +612,7 @@ void main(void)
 			if(oeuf[i*3]!=oeuf[i*3+1])
 			{
 				if(oeuf[i*3+1]!=6) efface_oeuf(oeuf[i*3+1],i);
-			}
-		}
-		for(i=0;i<2;i++)
-		{
-			if(oeuf[i*3]!=oeuf[i*3+1])
-			{
-				place_oeuf(oeuf[i*3],i);
+				if(oeuf[i*3]!=6) place_oeuf(oeuf[i*3],i);
 				oeuf[i*3+1]=oeuf[i*3];
 			}
 		}
@@ -669,7 +636,7 @@ void main(void)
 				efface_oeuf(oeuf[i*3+1],i);
 				oeuf[i*3]=6;
 				oeuf[i*3+1]=6;
-				oeuf[i*3+2]=1;
+				oeuf[i*3+2]=0;
 				calc = 48 + 12 * i;
 				kill(calc); //supprimer l'affichage de l'oeuf i
 			}
@@ -713,7 +680,7 @@ void main(void)
 			{
 				if(oeuf[i*3]!=6)
 				{
-					efface_oeuf(oeuf[i*3],i);
+					//efface_oeuf(oeuf[i*3],i);
 					oeuf[i*3] = 6;
 					oeuf[i*3+1] = 6;
 					oeuf[i*3+2] = 6;
@@ -735,6 +702,7 @@ void main(void)
 			vie_lapin = 3;
 			place_lapin(pos_lapin);
 		}
+		put_debug(oeuf[2],oeuf[5]);
 	}
 
 }
