@@ -325,7 +325,7 @@ void player_machine()
 }
 void player_random()
 {
-	if ( state_sprite == 0) 
+	if ( state_sprite == 0 && wait==1) 
 	{
 		i=(rand()%4);
 		if(i==1&& pos_lapin>  0)
@@ -396,7 +396,7 @@ void ennemi_machine()
 */
 	for(i=0;i<2;i++)
 	{
-		if(wait>wait_max)
+		if(wait>=wait_max)
 		{
 			if ( oeuf[i*3+2]==0) ennemi_sprite_0(i);
 			if ( oeuf[i*3+2]==1) ennemi_sprite_1(i);
@@ -445,6 +445,7 @@ void physique()
 			// hit_lapin=1;
 			state_sprite = 3;
 			wait_max =60;
+			wait = 0;
 		}
 		kill(96); // supprimer l'affichage du tir
 		tir_oeuf_y=0;
@@ -484,7 +485,7 @@ void physique()
 			oeuf[i*3+1]=oeuf[i*3];
 		}
 	}
-	if (wait > wait_max)
+	if (wait>=wait_max)
 	{
 		for(i=0;i<2;i++)
 		{
@@ -498,6 +499,21 @@ void physique()
 				calc = 48 + 12 * i;
 				kill(calc); //supprimer l'affichage de l'oeuf i
 			}
+		}
+		if(state_sprite>2)
+		{
+			efface_lapin(pos_lapin);
+			pos_lapin=0;
+			place_lapin(pos_lapin);
+			pos_lapin_old=0;
+			state_sprite = 0;
+			if(vie_lapin==0 && mode==1)
+			{
+				if(hi_score<score) hi_score = score;
+				score=0;
+				mode=0;
+			}
+			if(vie_lapin>0 && mode==1)vie_lapin--;
 		}
 		wait = 0;
 	}
@@ -559,7 +575,7 @@ void main(void)
 		}
 		else
 		{
-			if(wait==1) player_random();
+			player_random();
 		}
 		
 		 // if(wait>wait_max)
@@ -600,21 +616,6 @@ void main(void)
 			place_lapin(pos_lapin);
 			hit_lapin=1;
 		} */
-		if(state_sprite>2&&wait==wait_max)
-		{
-			efface_lapin(pos_lapin);
-			pos_lapin=0;
-			place_lapin(pos_lapin);
-			pos_lapin_old=0;
-			state_sprite = 0;
-			if(vie_lapin==0 && mode==1)
-			{
-				if(hi_score<score) hi_score = score;
-				score=0;
-				mode=0;
-			}
-			if(vie_lapin>0 && mode==1)vie_lapin--;
-		}
 		if(mode == 0 && pad&PAD_START)
 		{
 			mode = 1;
@@ -649,7 +650,7 @@ void main(void)
 			vie_lapin = 3;
 			place_lapin(pos_lapin);
 		}
-		put_debug(oeuf[0],oeuf[3]);
+		put_debug(state_sprite,oeuf[3]);
 	}
 
 }
