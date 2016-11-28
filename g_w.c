@@ -361,8 +361,8 @@ void ennemi_sprite_1(unsigned int i)
 	if(oeuf[i*3]==0)oeuf[i*3+2]=2;
 	if(tir_oeuf_y==0&&oeuf[i*3]!=6&&(rand()%5)==1)
 	{
-		tir_oeuf_y++;
-		tir_oeuf_x= oeuf[i*3];
+		oeuf[i*3+2]=3;
+		if(oeuf[i*3]==0)oeuf[i*3+2]=4;
 	}
 }
 void ennemi_sprite_2(unsigned int i)
@@ -370,53 +370,73 @@ void ennemi_sprite_2(unsigned int i)
 	if(oeuf[i*3]==5)oeuf[i*3+2]=1;
 	if(tir_oeuf_y==0&&oeuf[i*3]!=6&&(rand()%5)==1)
 	{
-		tir_oeuf_y++;
-		tir_oeuf_x= oeuf[i*3];
+		oeuf[i*3+2]=4;
+		if(oeuf[i*3]==5)oeuf[i*3+2]=3;
 	}
 }
 void ennemi_sprite_3(unsigned int i)
 {
-	oeuf_gueule_1(oeuf[i*3+1],i);
-	if((wait%2)==0)oeuf[i*3+2]=4;
+	oeuf[i*3+2]=1;
+	if(oeuf[i*3]==0)oeuf[i*3+2]=2;
 }
 void ennemi_sprite_4(unsigned int i)
 {
-	oeuf_gueule_2(oeuf[i*3+1],i);
-	if((wait%2)==0)oeuf[i*3+2]=3;
+	oeuf[i*3+2]=2;
+	if(oeuf[i*3]==5)oeuf[i*3+2]=1;
 }
-
+void ennemi_sprite_5(unsigned int i)
+{
+	oeuf_gueule_1(oeuf[i*3+1],i);
+	if((wait%2)==0)oeuf[i*3+2]=6;
+}
+void ennemi_sprite_6(unsigned int i)
+{
+	oeuf_gueule_2(oeuf[i*3+1],i);
+	if((wait%2)==0)oeuf[i*3+2]=5;
+}
 void ennemi_machine()
 {
 /*
 	0 - Repos
 	1 - Déplacement gauche
 	2 - Déplacement droite
-	3 - Meurt 1
-	4 - Meurt 2
+	3 - tir & Déplacement gauche
+	4 - tir & Déplacement droite
+	5 - Meurt 1
+	6 - Meurt 2
+
 */
 	for(i=0;i<2;i++)
 	{
 		if(wait>=wait_max)
 		{
+			if ( oeuf[i*3+2]==3) ennemi_sprite_3(i);
+			if ( oeuf[i*3+2]==4) ennemi_sprite_4(i);
 			if ( oeuf[i*3+2]==0) ennemi_sprite_0(i);
 			if ( oeuf[i*3+2]==1) ennemi_sprite_1(i);
 			if ( oeuf[i*3+2]==2) ennemi_sprite_2(i);
 		}
-		if ( oeuf[i*3+2]==3) ennemi_sprite_3(i);
-		if ( oeuf[i*3+2]==4) ennemi_sprite_4(i);
+
+		if ( oeuf[i*3+2]==5) ennemi_sprite_5(i);
+		if ( oeuf[i*3+2]==6) ennemi_sprite_6(i);
 	}
 }
 void physique()
 {
 	if(wait>=wait_max)
 	{
-		for(i=0;i<2;i++)
-		{
-			if ( oeuf[i*3+2]==1) oeuf[i*3]--;
-			if ( oeuf[i*3+2]==2) oeuf[i*3]++;
-		}
 		if(tir_y < 3) tir_y--;
 		if(tir_oeuf_y >0) tir_oeuf_y++;
+		for(i=0;i<2;i++)
+		{
+			if ( oeuf[i*3+2]==1||oeuf[i*3+2]==3) oeuf[i*3]--;
+			if ( oeuf[i*3+2]==2||oeuf[i*3+2]==4) oeuf[i*3]++;
+			if ( oeuf[i*3+2]==3||oeuf[i*3+2]==4)
+			{
+				tir_oeuf_x = oeuf[i*3];
+				tir_oeuf_y++;
+			}
+		}
 	}
 	if(tir_y == 0)
 	{
@@ -426,7 +446,7 @@ void physique()
 		{	
 			if(oeuf[i*3]==tir_x)
 			{
-				oeuf[i*3+2]=3;
+				oeuf[i*3+2]=5;
 				if(mode==1)score++;
 				if(wait_max>10)wait_max-=2; 
 			}
@@ -489,7 +509,7 @@ void physique()
 	{
 		for(i=0;i<2;i++)
 		{
-			if(oeuf[i*3+2]>2)
+			if(oeuf[i*3+2]>4)
 			{
 				// list[oeuf[i*3]*3+2]=0x08;
 				efface_oeuf(oeuf[i*3+1],i);
@@ -650,7 +670,7 @@ void main(void)
 			vie_lapin = 3;
 			place_lapin(pos_lapin);
 		}
-		put_debug(state_sprite,oeuf[3]);
+		put_debug(oeuf[2],oeuf[5]);
 	}
 
 }
