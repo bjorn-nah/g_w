@@ -7,11 +7,11 @@
 #include "rand.h"
 
 
-static unsigned int i, calc;
+static unsigned int i, j, calc;
 static unsigned int pos_lapin,pos_lapin_old, wait, wait_max, tir_x, tir_y,tir_y_old, score, hi_score, compteur;
 static unsigned int tir_oeuf_x, tir_oeuf_y ,tir_oeuf_y_old, hit_lapin, vie_lapin;
 static unsigned int state_sprite;
-static unsigned char pad, move, mode, hi_tule;
+static unsigned char pad, move, mode;
 
 //put a string into the nametable
 
@@ -261,11 +261,11 @@ void put_debug(const int debug1,const int debug2)
 
 void kill(unsigned int num)
 {
-	for(i=0;i<4;i++)
+	for(j=0;j<4;j++)
 	{
-		list[num+i*3] = MSB(NTADR_A(0,0));
-		list[num+i*3+1] = LSB(NTADR_A(0,0));
-		list[num+i*3+2] = 0x27;
+		list[num+j*3] = MSB(NTADR_A(0,0));
+		list[num+j*3+1] = LSB(NTADR_A(0,0));
+		list[num+j*3+2] = 0x27;
 	}
 }
 // player
@@ -646,12 +646,12 @@ void main(void)
 			kill(96);
 			for(i=0;i<2;i++)
 			{
-				if(oeuf[i*3]!=6)
+				if(oeuf[i*3+2]!=0)
 				{
 					//efface_oeuf(oeuf[i*3],i);
 					oeuf[i*3] = 6;
 					oeuf[i*3+1] = 6;
-					oeuf[i*3+2] = 6;
+					oeuf[i*3+2] = 0;
 					calc = 48 + 12 * i;
 					kill(calc); //supprimer l'affichage de l'oeuf i
 				}
@@ -670,6 +670,7 @@ void main(void)
 			vie_lapin = 3;
 			place_lapin(pos_lapin);
 		}
+		put_debug(oeuf[2],oeuf[5]);
 		put_debug(oeuf[2],oeuf[5]);
 	}
 
