@@ -286,7 +286,7 @@ void player_sprite_0()
 		tir_x = pos_lapin;
 		tir_y--;
 		state_sprite =2;
-		//wait =0;
+		wait =0;
 	}
 }
 void player_sprite_1()
@@ -449,6 +449,7 @@ void physique()
 				oeuf[i*3+2]=5;
 				if(mode==1)score++;
 				if(wait_max>10)wait_max-=2; 
+				wait = 0;
 			}
 		}			
 		tir_y =3;
@@ -596,6 +597,7 @@ void main(void)
 		else
 		{
 			player_random();
+			put_score(hi_score,vie_lapin,0x2d,wait);
 		}
 		
 		 // if(wait>wait_max)
