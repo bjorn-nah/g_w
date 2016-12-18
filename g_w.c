@@ -642,15 +642,15 @@ void main(void)
 		{
 			mode = 1;
 			efface_lapin(pos_lapin);
-			efface_tir(10+(tir_x*2),10+(tir_y*2));
+			if(tir_y<3)efface_tir(10+(tir_x*2),10+(tir_y*2));
 			kill(108); // supprimer l'affichage du tir
-			efface_tir_o(10+(tir_oeuf_x*2),10+(tir_oeuf_y*2));
+			if(tir_oeuf_y>0)efface_tir_o(10+(tir_oeuf_x*2),10+(tir_oeuf_y*2));
 			kill(96);
 			for(i=0;i<2;i++)
 			{
 				if(oeuf[i*3+2]!=0)
 				{
-					//efface_oeuf(oeuf[i*3],i);
+					efface_oeuf(oeuf[i*3],i);
 					oeuf[i*3] = 6;
 					oeuf[i*3+1] = 6;
 					oeuf[i*3+2] = 0;
