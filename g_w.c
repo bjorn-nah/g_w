@@ -10,7 +10,7 @@
 static unsigned int i, j, calc;
 static unsigned int pos_lapin,pos_lapin_old, wait, wait_max, tir_x, tir_y,tir_y_old, score, hi_score, compteur;
 static unsigned int tir_oeuf_x, tir_oeuf_y ,tir_oeuf_y_old, hit_lapin, vie_lapin;
-static unsigned int state_sprite;
+static unsigned int state_sprite, state_son;
 static unsigned char pad, move, mode;
 
 //put a string into the nametable
@@ -295,6 +295,7 @@ void player_sprite_1()
 }
 void player_sprite_2()
 {
+	state_son = 1;
 	if(pad==0)state_sprite =0;
 }
 void player_sprite_3()
@@ -358,6 +359,7 @@ void ennemi_sprite_0(unsigned int i)
 }
 void ennemi_sprite_1(unsigned int i)
 {
+	state_son = 0;
 	if(oeuf[i*3]==0)oeuf[i*3+2]=2;
 	if(tir_oeuf_y==0&&oeuf[i*3]!=6&&(rand()%5)==1)
 	{
@@ -367,6 +369,7 @@ void ennemi_sprite_1(unsigned int i)
 }
 void ennemi_sprite_2(unsigned int i)
 {
+	state_son = 0;
 	if(oeuf[i*3]==5)oeuf[i*3+2]=1;
 	if(tir_oeuf_y==0&&oeuf[i*3]!=6&&(rand()%5)==1)
 	{
@@ -376,16 +379,19 @@ void ennemi_sprite_2(unsigned int i)
 }
 void ennemi_sprite_3(unsigned int i)
 {
+	state_son = 1;
 	oeuf[i*3+2]=1;
 	if(oeuf[i*3]==0)oeuf[i*3+2]=2;
 }
 void ennemi_sprite_4(unsigned int i)
 {
+	state_son = 1;
 	oeuf[i*3+2]=2;
 	if(oeuf[i*3]==5)oeuf[i*3+2]=1;
 }
 void ennemi_sprite_5(unsigned int i)
 {
+	state_son = 2;
 	oeuf_gueule_1(oeuf[i*3+1],i);
 	if((wait%2)==0)oeuf[i*3+2]=6;
 }
@@ -465,6 +471,7 @@ void physique()
 		{
 			// hit_lapin=1;
 			state_sprite = 3;
+			state_son = 3;
 			wait_max =60;
 			wait = 0;
 		}
@@ -536,7 +543,25 @@ void physique()
 			}
 			if(vie_lapin>0 && mode==1)vie_lapin--;
 		}
-		wait = 0;
+	}
+}
+
+void son()
+{
+	/*
+	0 - Déplacement oeuf
+	1 - tir
+	2 - Mort oeuf
+	3 - Mort lapin
+	4 - Muet
+	*/
+	if (wait==1 && mode==1)
+	{
+		if(state_son==0)sfx_play(0,0);
+		if(state_son==1)sfx_play(1,1);
+		if(state_son==2)sfx_play(2,2);
+		if(state_son==3)sfx_play(3,3);
+		state_son = 4;
 	}
 }
 
@@ -574,6 +599,8 @@ void main(void)
 	compteur = 0;
 	vie_lapin = 0;
 	mode = 0;
+	
+	state_son = 4;
 	
 	// set le premier lapin
 	place_lapin(pos_lapin);
@@ -625,6 +652,8 @@ void main(void)
 		// }
 		ennemi_machine();
 		physique();
+		son();
+		if (wait>=wait_max) wait = 0;
 	
 /* 		if(hit_lapin==1&&(wait%2)==0)
 		{
