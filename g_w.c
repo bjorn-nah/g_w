@@ -431,6 +431,7 @@ void physique()
 {
 	if(wait>=wait_max)
 	{
+		if(wait_max>60) wait_max = 60; //si le tps de pause est trop long (après une mort par ex.) 
 		if(tir_y < 3) tir_y--;
 		if(tir_oeuf_y >0) tir_oeuf_y++;
 		for(i=0;i<2;i++)
@@ -472,7 +473,7 @@ void physique()
 			// hit_lapin=1;
 			state_sprite = 3;
 			state_son = 3;
-			wait_max =60;
+			wait_max =180; // environ 3 sec. ^^
 			wait = 0;
 		}
 		kill(96); // supprimer l'affichage du tir
@@ -558,8 +559,8 @@ void son()
 	if (wait==1 && mode==1)
 	{
 		if(state_son==0)sfx_play(0,0);
-		if(state_son==1)sfx_play(1,1);
-		if(state_son==2)sfx_play(2,2);
+		if(state_son==1)sfx_play(1,0);
+		if(state_son==2)sfx_play(2,0);
 		if(state_son==3)sfx_play(3,3);
 		state_son = 4;
 	}
