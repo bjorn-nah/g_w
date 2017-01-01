@@ -1,16 +1,18 @@
-//this example code shows how to put some text in nametable
-//it assumes that you have ASCII-encoded font in the CHR tiles $00-$3f
-//it also shows how to detect PAL/NTSCvideo system
+// g_w (wip name)
+// game for Nintendo Nes - Not competing entry at the AC 2016
+// code/gfx/sfx by Bjorn
+
 
 #include "neslib.h"
 #include "g_w.h"
 #include "rand.h"
 
 
-static unsigned int i, calc;
-static unsigned int pos_lapin,pos_lapin_old, wait, wait_max, tir_x, tir_y,tir_y_old, score, compteur;
+static unsigned int i, j, calc;
+static unsigned int pos_lapin,pos_lapin_old, wait, wait_max, tir_x, tir_y,tir_y_old, score, hi_score, compteur;
 static unsigned int tir_oeuf_x, tir_oeuf_y ,tir_oeuf_y_old, hit_lapin, vie_lapin;
-static unsigned char pad, move;
+static unsigned int state_sprite, state_son;
+static unsigned char pad, move, mode;
 
 //put a string into the nametable
 
@@ -25,7 +27,7 @@ static unsigned char list[5*4*3*2+9+1];
 
 const unsigned char palBackground[16]={ 0x0f,0x38,0x11,0x28,0x0f,0x18,0x28,0x38,0x0f,0x28,0x11,0x38,0x0f,0x1c,0x2c,0x3c };
 
-static unsigned int oeuf[6]={6,6,1,6,6,1};
+static unsigned int oeuf[6]={6,6,0,6,6,0};
 
 //init data for the update list, it contains MSB and LSB of a tile address
 //in the nametable, then the tile number
@@ -207,47 +209,364 @@ void place_tir(unsigned int pos_x,unsigned int pos_y)
 	list[119]=0x1b;
 }
 
-void put_score(const int sco,const int vie,const int frame)
+void put_score(const int sco,const int vie,const char hi,const int frame)
 {
-	if(frame%5==0)
+	if(frame%6==0)
 	{
 		list[120]= MSB(NTADR_A(21,9));
 		list[121]= LSB(NTADR_A(21,9));
 		list[122]= 0x30+(sco%10);
 	}
-	if(frame%5==1)
+	if(frame%6==1)
 	{
 		list[120]= MSB(NTADR_A(20,9));
 		list[121]= LSB(NTADR_A(20,9));
 		list[122]= 0x30+(sco/10)%10;
 	}
-	if(frame%5==2)
+	if(frame%6==2)
 	{
 		list[120]= MSB(NTADR_A(19,9));
 		list[121]= LSB(NTADR_A(19,9));
 		list[122]= 0x30+(sco/100);
 	}
-	if(frame%5==3)
+	if(frame%6==3)
 	{
 		list[120]= MSB(NTADR_A(18,9));
 		list[121]= LSB(NTADR_A(18,9));
 		list[122]= 0x30+(sco/1000);
 	}
-	if(frame%5==4)
+	if(frame%6==4)
 	{
 		list[120]= MSB(NTADR_A(11,9));
 		list[121]= LSB(NTADR_A(11,9));
 		list[122]= 0x30+(vie%10);
 	}
+	if(frame%6==5)
+	{
+		list[120]= MSB(NTADR_A(13,9));
+		list[121]= LSB(NTADR_A(13,9));
+		list[122]= hi;
+	}
+}
+
+void put_debug(const int debug1,const int debug2)
+{
+	list[123]= MSB(NTADR_A(2,2));
+	list[124]= LSB(NTADR_A(2,2));
+	list[125]= 0x30+(debug1%10);
+	list[126]= MSB(NTADR_A(2,3));
+	list[127]= LSB(NTADR_A(2,3));
+	list[128]= 0x30+(debug2%10);
+	
 }
 
 void kill(unsigned int num)
 {
-	for(i=0;i<4;i++)
+	for(j=0;j<4;j++)
 	{
-		list[num+i*3] = MSB(NTADR_A(0,0));
-		list[num+i*3+1] = LSB(NTADR_A(0,0));
-		list[num+i*3+2] = 0x27;
+		list[num+j*3] = MSB(NTADR_A(0,0));
+		list[num+j*3+1] = LSB(NTADR_A(0,0));
+		list[num+j*3+2] = 0x27;
+	}
+}
+// player
+void player_sprite_0()
+{
+	if(pad&PAD_LEFT && pos_lapin>  0 &&hit_lapin==0)
+	{
+		pos_lapin--;
+		state_sprite =1;
+	}
+	if(pad&PAD_RIGHT && pos_lapin<  5&&hit_lapin==0)
+	{
+		pos_lapin++;
+		state_sprite =1;
+	}
+	if(pad&PAD_A && tir_y ==3&&hit_lapin==0)
+	{
+		tir_x = pos_lapin;
+		tir_y--;
+		state_sprite =2;
+		wait =0;
+	}
+}
+void player_sprite_1()
+{
+	if(pad==0)state_sprite =0;
+}
+void player_sprite_2()
+{
+	state_son = 1;
+	if(pad==0)state_sprite =0;
+}
+void player_sprite_3()
+{
+	mort_lapin(pos_lapin);
+	if((wait%2)==0)state_sprite =4;
+}
+void player_sprite_4()
+{
+	place_lapin(pos_lapin);
+	if((wait%2)==0)state_sprite =3;
+}
+void player_machine()
+{
+/*
+	0 - Repos
+	1 - Déplacement
+	2 - tir
+	3 - Meurt 1
+	4 - Meurt 2
+*/
+	if ( state_sprite == 0) player_sprite_0();
+	if ( state_sprite == 1) player_sprite_1();
+	if ( state_sprite == 2) player_sprite_2();
+	if ( state_sprite == 3) player_sprite_3();
+	if ( state_sprite == 4) player_sprite_4();
+	
+}
+void player_random()
+{
+	if ( state_sprite == 0 && wait==1) 
+	{
+		i=(rand()%4);
+		if(i==1&& pos_lapin>  0)
+		{
+			pos_lapin--;
+			state_sprite =1;
+		}
+		if(i==2&& pos_lapin<  5)
+		{
+			pos_lapin++;
+			state_sprite =1;
+		}
+		if(i==3&& tir_y ==3)
+		{
+			tir_x = pos_lapin;
+			tir_y--;
+			state_sprite =2;
+		}
+	}
+	if ( state_sprite == 1) state_sprite =0;
+	if ( state_sprite == 2) state_sprite =0;
+	if ( state_sprite == 3) player_sprite_3();
+	if ( state_sprite == 4) player_sprite_4();
+	
+}
+// ennemis
+void ennemi_sprite_0(unsigned int i)
+{
+	if((rand()%5)==1)oeuf[i*3+2]=1;
+}
+void ennemi_sprite_1(unsigned int i)
+{
+	state_son = 0;
+	if(oeuf[i*3]==0)oeuf[i*3+2]=2;
+	if(tir_oeuf_y==0&&oeuf[i*3]!=6&&(rand()%5)==1)
+	{
+		state_son = 1;
+		oeuf[i*3+2]=3;
+		if(oeuf[i*3]==0)oeuf[i*3+2]=4;
+	}
+}
+void ennemi_sprite_2(unsigned int i)
+{
+	state_son = 0;
+	if(oeuf[i*3]==5)oeuf[i*3+2]=1;
+	if(tir_oeuf_y==0&&oeuf[i*3]!=6&&(rand()%5)==1)
+	{
+		state_son = 1;
+		oeuf[i*3+2]=4;
+		if(oeuf[i*3]==5)oeuf[i*3+2]=3;
+	}
+}
+void ennemi_sprite_3(unsigned int i)
+{
+	oeuf[i*3+2]=1;
+	if(oeuf[i*3]==0)oeuf[i*3+2]=2;
+}
+void ennemi_sprite_4(unsigned int i)
+{
+	oeuf[i*3+2]=2;
+	if(oeuf[i*3]==5)oeuf[i*3+2]=1;
+}
+void ennemi_sprite_5(unsigned int i)
+{
+	//state_son = 2;
+	oeuf_gueule_1(oeuf[i*3+1],i);
+	if((wait%2)==0)oeuf[i*3+2]=6;
+}
+void ennemi_sprite_6(unsigned int i)
+{
+	oeuf_gueule_2(oeuf[i*3+1],i);
+	if((wait%2)==0)oeuf[i*3+2]=5;
+}
+void ennemi_machine()
+{
+/*
+	0 - Repos
+	1 - Déplacement gauche
+	2 - Déplacement droite
+	3 - tir & Déplacement gauche
+	4 - tir & Déplacement droite
+	5 - Meurt 1
+	6 - Meurt 2
+
+*/
+	for(i=0;i<2;i++)
+	{
+		if(wait>=wait_max)
+		{
+			// je ne sais plus réllement pourquoi les états 3 et 4 sont testés en premier,
+			// mais c'est super important.
+			if ( oeuf[i*3+2]==3) ennemi_sprite_3(i);
+			if ( oeuf[i*3+2]==4) ennemi_sprite_4(i);
+			if ( oeuf[i*3+2]==0) ennemi_sprite_0(i);
+			if ( oeuf[i*3+2]==1) ennemi_sprite_1(i);
+			if ( oeuf[i*3+2]==2) ennemi_sprite_2(i);
+		}
+
+		if ( oeuf[i*3+2]==5) ennemi_sprite_5(i);
+		if ( oeuf[i*3+2]==6) ennemi_sprite_6(i);
+	}
+}
+void physique()
+{
+	if(wait>=wait_max)
+	{
+		if(wait_max>60) wait_max = 60; //si le tps de pause est trop long (après une mort par ex.) 
+		if(tir_y < 3) tir_y--;
+		if(tir_oeuf_y >0) tir_oeuf_y++;
+		for(i=0;i<2;i++)
+		{
+			if ( oeuf[i*3+2]==1||oeuf[i*3+2]==3) oeuf[i*3]--;
+			if ( oeuf[i*3+2]==2||oeuf[i*3+2]==4) oeuf[i*3]++;
+			if ( (oeuf[i*3+2]==3||oeuf[i*3+2]==4) && tir_oeuf_y==0) // hack pourrave pour pas que les 2 oeufs titrent en même temps
+			{
+				tir_oeuf_x = oeuf[i*3];
+				tir_oeuf_y++;
+			}
+		}
+	}
+	if(tir_y == 0)
+	{
+		// list[(tir_x+6)*3+2]=0x0B;
+		efface_tir(10+(tir_x*2),10+(tir_y_old*2));
+		for(i=0;i<2;i++)
+		{	
+			if(oeuf[i*3]==tir_x)
+			{
+				oeuf[i*3+2]=5;
+				if(mode==1)score++;
+				state_son = 2;
+				if(wait_max>10)wait_max-=2; 
+				wait = 0;
+			}
+		}			
+		tir_y =3;
+		kill(108); // supprimer l'affichage du tir
+		tir_y_old =tir_y;
+		srand(compteur);
+	}
+	if(tir_oeuf_y == 3)
+	{
+		// list[(tir_oeuf_x+12)*3+2]=0x0B;
+		efface_tir_o(12+(tir_oeuf_x*2),10);
+		if(tir_oeuf_x==pos_lapin)
+		{
+			// hit_lapin=1;
+			state_sprite = 3;
+			state_son = 3;
+			wait_max =180; // environ 3 sec. ^^
+			wait = 0;
+		}
+		kill(96); // supprimer l'affichage du tir
+		tir_oeuf_y=0;
+	}
+	// déplacements lapin
+	if(pos_lapin!=pos_lapin_old)
+	{
+		efface_lapin(pos_lapin_old);
+		place_lapin(pos_lapin);
+		pos_lapin_old=pos_lapin;
+	}
+	if(tir_y!=tir_y_old)
+	{
+		if(tir_y_old <3) efface_tir(10+(tir_x*2),10+(tir_y_old*2));
+		place_tir(10+(tir_x*2),10+(tir_y*2));
+		//list[(tir_x+(tir_y*6))*3+2]=0x05;
+		//list[(tir_x+(tir_y_old*6))*3+2]=0x0B;
+		tir_y_old=tir_y;
+	}
+	if(tir_oeuf_y!=tir_oeuf_y_old)
+	{
+		if(tir_oeuf_y>0)
+			// list[(tir_oeuf_x+(tir_oeuf_y*6))*3+2]=0x06;
+			place_tir_o(10+(tir_oeuf_x*2),10+(tir_oeuf_y*2));
+		if(tir_oeuf_y_old>0) 
+			//list[(tir_oeuf_x+(tir_oeuf_y_old*6))*3+2]=0x0B;
+			efface_tir_o(10+(tir_oeuf_x*2),10+(tir_oeuf_y_old*2));
+		tir_oeuf_y_old=tir_oeuf_y;
+	}
+	// déplacements oeufs
+	for(i=0;i<2;i++)
+	{
+		if(oeuf[i*3]!=oeuf[i*3+1])
+		{
+			if(oeuf[i*3+1]!=6) efface_oeuf(oeuf[i*3+1],i);
+			if(oeuf[i*3]!=6) place_oeuf(oeuf[i*3],i);
+			oeuf[i*3+1]=oeuf[i*3];
+		}
+	}
+	if (wait>=wait_max)
+	{
+		for(i=0;i<2;i++)
+		{
+			if(oeuf[i*3+2]>4)
+			{
+				// list[oeuf[i*3]*3+2]=0x08;
+				efface_oeuf(oeuf[i*3+1],i);
+				oeuf[i*3]=6;
+				oeuf[i*3+1]=6;
+				oeuf[i*3+2]=0;
+				calc = 48 + 12 * i;
+				kill(calc); //supprimer l'affichage de l'oeuf i
+			}
+		}
+		if(state_sprite>2)
+		{
+			efface_lapin(pos_lapin);
+			pos_lapin=0;
+			place_lapin(pos_lapin);
+			pos_lapin_old=0;
+			state_sprite = 0;
+			if(vie_lapin==0 && mode==1)
+			{
+				if(hi_score<score) hi_score = score;
+				score=0;
+				mode=0;
+			}
+			if(vie_lapin>0 && mode==1)vie_lapin--;
+		}
+	}
+}
+
+void son()
+{
+	/*
+	0 - Déplacement oeuf
+	1 - tir
+	2 - Mort oeuf
+	3 - Mort lapin
+	4 - Muet
+	*/
+	if (wait==1 && mode==1)
+	{
+		if(state_son==0)sfx_play(0,0);
+		if(state_son==1)sfx_play(1,0);
+		if(state_son==2)sfx_play(2,0);
+		if(state_son==3)sfx_play(3,3);
+		state_son = 4;
 	}
 }
 
@@ -279,14 +598,17 @@ void main(void)
 	wait = 0;
 	move = 0;
 	wait_max = 60;
+	
 	score = 0;
+	hi_score = 0;
 	compteur = 0;
-	vie_lapin = 3;
+	vie_lapin = 0;
+	mode = 0;
+	
+	state_son = 4;
 	
 	// set le premier lapin
 	place_lapin(pos_lapin);
-	
-	
 	vram_adr(NAMETABLE_A);//set VRAM address
 	vram_unrle(g_w);
 	ppu_on_all();//enable rendering
@@ -297,170 +619,59 @@ void main(void)
 		wait++;
 		compteur++;
 
-		if(pad&PAD_LEFT && pos_lapin>  0 && move ==0&&hit_lapin==0)
+		if(mode==1)
 		{
-			pos_lapin--;
-			move =1;
+			player_machine();
+			put_score(score,vie_lapin,0x2e,wait);
 		}
-		if(pad&PAD_RIGHT && pos_lapin<  5&& move ==0&&hit_lapin==0)
+		else
 		{
-			pos_lapin++;
-			move =1;
-		}
-		if(pad&PAD_A && tir_y ==3&&hit_lapin==0)
-		{
-			tir_x = pos_lapin;
-			tir_y--;
-			//wait =0;
-		}
-		if(pad==0)move =0;
-		put_score(score,vie_lapin,wait);
-		
-		 if(wait>wait_max)
-		{
-			//set_rand(compteur);
-			if(tir_y < 3) tir_y--;
-			if(tir_oeuf_y >0) tir_oeuf_y++;
-			for(i=0;i<2;i++)
-			{
-				// déplacements oeufs
-				if(oeuf[i*3]==0&&oeuf[i*3+2]==1)oeuf[i*3+2]=2;
-				if(oeuf[i*3]==5&&oeuf[i*3+2]==2)oeuf[i*3+2]=1;
-				if(oeuf[i*3]<6&&oeuf[i*3+2]==1)oeuf[i*3]--;
-				if(oeuf[i*3]<6&&oeuf[i*3+2]==2)oeuf[i*3]++;
-				if(6==oeuf[i*3]&& (rand()%5)==1)oeuf[i*3]--;
-				if(tir_oeuf_y==0&&oeuf[i*3]!=6&&(rand()%5)==1&&oeuf[i*3+2]==1)
-				{
-					tir_oeuf_y++;
-					tir_oeuf_x= oeuf[i*3];
-				}
-			}
-			wait =0;
-		}
-		if(tir_y == 0)
-		{
-			// list[(tir_x+6)*3+2]=0x0B;
-			efface_tir(10+(tir_x*2),10+(tir_y_old*2));
-			for(i=0;i<2;i++)
-			{	
-				if(oeuf[i*3]==tir_x)
-				{
-					oeuf[i*3+2]=3;
-					score++;
-					if(wait_max>10)wait_max-=2;
-				}
-			}			
-			tir_y =3;
-			kill(108); // supprimer l'affichage du tir
-			tir_y_old =tir_y;
-			srand(compteur);
-		}
-		if(tir_oeuf_y == 3)
-		{
-			// list[(tir_oeuf_x+12)*3+2]=0x0B;
-			efface_tir_o(12+(tir_oeuf_x*2),10);
-			if(tir_oeuf_x==pos_lapin)
-			{
-				hit_lapin=1;
-				wait_max =60;
-			}
-			kill(96); // supprimer l'affichage du tir
-			tir_oeuf_y=0;
+			player_random();
+			put_score(hi_score,vie_lapin,0x2d,wait);
 		}
 		
-		// déplacements lapin
-		if(pos_lapin!=pos_lapin_old)
+		son(); // le son est joué en priotité, car il sagit en fait sur sfx de la frame -1
+		ennemi_machine();
+		physique();
+		
+		if (wait>=wait_max) wait = 0;
+	
+		if(mode == 0 && pad&PAD_START)
 		{
-			efface_lapin(pos_lapin_old);
-			place_lapin(pos_lapin);
-			pos_lapin_old=pos_lapin;
-		}
-		if(tir_y!=tir_y_old)
-		{
-			if(tir_y_old <3) efface_tir(10+(tir_x*2),10+(tir_y_old*2));
-			place_tir(10+(tir_x*2),10+(tir_y*2));
-			//list[(tir_x+(tir_y*6))*3+2]=0x05;
-			//list[(tir_x+(tir_y_old*6))*3+2]=0x0B;
-			tir_y_old=tir_y;
-		}
-		if(tir_oeuf_y!=tir_oeuf_y_old)
-		{
-			if(tir_oeuf_y>0)
-				// list[(tir_oeuf_x+(tir_oeuf_y*6))*3+2]=0x06;
-				place_tir_o(10+(tir_oeuf_x*2),10+(tir_oeuf_y*2));
-			if(tir_oeuf_y_old>0) 
-				//list[(tir_oeuf_x+(tir_oeuf_y_old*6))*3+2]=0x0B;
-				efface_tir_o(10+(tir_oeuf_x*2),10+(tir_oeuf_y_old*2));
-			tir_oeuf_y_old=tir_oeuf_y;
-		}
-		// déplacements oeufs
-		for(i=0;i<2;i++)
-		{
-			if(oeuf[i*3]!=oeuf[i*3+1])
-			{
-				if(oeuf[i*3+1]!=6) efface_oeuf(oeuf[i*3+1],i);
-			}
-		}
-		for(i=0;i<2;i++)
-		{
-			if(oeuf[i*3]!=oeuf[i*3+1])
-			{
-				place_oeuf(oeuf[i*3],i);
-				oeuf[i*3+1]=oeuf[i*3];
-			}
-		}
-		for(i=0;i<2;i++)
-		{
-			if(oeuf[i*3+2]==3&&(wait%2)==0)
-			{
-				// list[oeuf[i*3]*3+2]=0x02;
-				oeuf_gueule_1(oeuf[i*3+1],i);
-				oeuf[i*3+2]=4;
-			}
-			else if(oeuf[i*3+2]==4&&(wait%2)==0)
-			{
-				// list[oeuf[i*3]*3+2]=0x04;
-				oeuf_gueule_2(oeuf[i*3+1],i);
-				oeuf[i*3+2]=3;
-			}
-			if(oeuf[i*3+2]>2&&wait==wait_max)
-			{
-				// list[oeuf[i*3]*3+2]=0x08;
-				efface_oeuf(oeuf[i*3+1],i);
-				oeuf[i*3]=6;
-				oeuf[i*3+1]=6;
-				oeuf[i*3+2]=1;
-				calc = 48 + 12 * i;
-				kill(calc); //supprimer l'affichage de l'oeuf i
-			}
-		}
-		if(hit_lapin==1&&(wait%2)==0)
-		{
-			// list[(pos_lapin+18)*3+2]=0x03;
-			mort_lapin(pos_lapin);
-			hit_lapin=2;
-		}
-		else if(hit_lapin==2&&(wait%2)==0)
-		{
-			// list[(pos_lapin+18)*3+2]=0x01;
-			place_lapin(pos_lapin);
-			hit_lapin=1;
-		}
-		if(hit_lapin>0&&wait==wait_max)
-		{
+			mode = 1;
 			efface_lapin(pos_lapin);
-			pos_lapin=0;
-			place_lapin(pos_lapin);
-			pos_lapin_old=0;
-			hit_lapin = 0;
-			if(vie_lapin==0)
+			if(tir_y<3)efface_tir(10+(tir_x*2),10+(tir_y*2));
+			kill(108); // supprimer l'affichage du tir
+			if(tir_oeuf_y>0)efface_tir_o(10+(tir_oeuf_x*2),10+(tir_oeuf_y*2));
+			kill(96);
+			for(i=0;i<2;i++)
 			{
-				vie_lapin=3;
-				score=0;
+				if(oeuf[i*3+2]!=0)
+				{
+					efface_oeuf(oeuf[i*3],i);
+					oeuf[i*3] = 6;
+					oeuf[i*3+1] = 6;
+					oeuf[i*3+2] = 0;
+					calc = 48 + 12 * i;
+					kill(calc); //supprimer l'affichage de l'oeuf i
+				}
 			}
-			else
-				vie_lapin--;
+			pos_lapin=0;
+			pos_lapin_old = pos_lapin;
+			tir_x = 0;
+			tir_y = 3;
+			tir_y_old = tir_y;
+			tir_oeuf_x = 0;
+			tir_oeuf_y = 0;
+			tir_oeuf_y_old = tir_oeuf_y;
+			wait = 0;
+			move = 0;
+			score = 0;
+			vie_lapin = 3;
+			place_lapin(pos_lapin);
 		}
+		// put_debug(oeuf[2],oeuf[5]);
+		
 	}
 
 }

@@ -240,7 +240,7 @@ music_data:
 
 	.if(FT_SFX_ENABLE)
 sounds_data:
-	.include "sounds.s"
+	.include "son.s"
 	.endif
 
 .segment "SAMPLES"
