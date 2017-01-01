@@ -1,7 +1,7 @@
 # g_w
 g_w - game for Nintendo Nes - Not competing entry at the AC 2016
 
-!(https://raw.githubusercontent.com/bjorn-nah/g_w/master/g_w-12.png)
+![Intro Screenhot](https://raw.githubusercontent.com/bjorn-nah/g_w/master/g_w-12.png)
 
 This is my early attempt on this hardware, realised during the party.
 See "party_version" branch to to see the original disaster. ;)
