@@ -1,6 +1,7 @@
-//this example code shows how to put some text in nametable
-//it assumes that you have ASCII-encoded font in the CHR tiles $00-$3f
-//it also shows how to detect PAL/NTSCvideo system
+// g_w (wip name)
+// game for Nintendo Nes - Not competing entry at the AC 2016
+// code/gfx/sfx by Bjorn
+
 
 #include "neslib.h"
 #include "g_w.h"
@@ -26,7 +27,7 @@ static unsigned char list[5*4*3*2+9+1];
 
 const unsigned char palBackground[16]={ 0x0f,0x38,0x11,0x28,0x0f,0x18,0x28,0x38,0x0f,0x28,0x11,0x38,0x0f,0x1c,0x2c,0x3c };
 
-static unsigned int oeuf[6]={6,6,1,6,6,1};
+static unsigned int oeuf[6]={6,6,0,6,6,0};
 
 //init data for the update list, it contains MSB and LSB of a tile address
 //in the nametable, then the tile number
@@ -363,6 +364,7 @@ void ennemi_sprite_1(unsigned int i)
 	if(oeuf[i*3]==0)oeuf[i*3+2]=2;
 	if(tir_oeuf_y==0&&oeuf[i*3]!=6&&(rand()%5)==1)
 	{
+		state_son = 1;
 		oeuf[i*3+2]=3;
 		if(oeuf[i*3]==0)oeuf[i*3+2]=4;
 	}
@@ -373,25 +375,24 @@ void ennemi_sprite_2(unsigned int i)
 	if(oeuf[i*3]==5)oeuf[i*3+2]=1;
 	if(tir_oeuf_y==0&&oeuf[i*3]!=6&&(rand()%5)==1)
 	{
+		state_son = 1;
 		oeuf[i*3+2]=4;
 		if(oeuf[i*3]==5)oeuf[i*3+2]=3;
 	}
 }
 void ennemi_sprite_3(unsigned int i)
 {
-	state_son = 1;
 	oeuf[i*3+2]=1;
 	if(oeuf[i*3]==0)oeuf[i*3+2]=2;
 }
 void ennemi_sprite_4(unsigned int i)
 {
-	state_son = 1;
 	oeuf[i*3+2]=2;
 	if(oeuf[i*3]==5)oeuf[i*3+2]=1;
 }
 void ennemi_sprite_5(unsigned int i)
 {
-	state_son = 2;
+	//state_son = 2;
 	oeuf_gueule_1(oeuf[i*3+1],i);
 	if((wait%2)==0)oeuf[i*3+2]=6;
 }
@@ -416,6 +417,8 @@ void ennemi_machine()
 	{
 		if(wait>=wait_max)
 		{
+			// je ne sais plus réllement pourquoi les états 3 et 4 sont testés en premier,
+			// mais c'est super important.
 			if ( oeuf[i*3+2]==3) ennemi_sprite_3(i);
 			if ( oeuf[i*3+2]==4) ennemi_sprite_4(i);
 			if ( oeuf[i*3+2]==0) ennemi_sprite_0(i);
@@ -438,7 +441,7 @@ void physique()
 		{
 			if ( oeuf[i*3+2]==1||oeuf[i*3+2]==3) oeuf[i*3]--;
 			if ( oeuf[i*3+2]==2||oeuf[i*3+2]==4) oeuf[i*3]++;
-			if ( oeuf[i*3+2]==3||oeuf[i*3+2]==4)
+			if ( (oeuf[i*3+2]==3||oeuf[i*3+2]==4) && tir_oeuf_y==0) // hack pourrave pour pas que les 2 oeufs titrent en même temps
 			{
 				tir_oeuf_x = oeuf[i*3];
 				tir_oeuf_y++;
@@ -455,6 +458,7 @@ void physique()
 			{
 				oeuf[i*3+2]=5;
 				if(mode==1)score++;
+				state_son = 2;
 				if(wait_max>10)wait_max-=2; 
 				wait = 0;
 			}
@@ -605,8 +609,6 @@ void main(void)
 	
 	// set le premier lapin
 	place_lapin(pos_lapin);
-	
-	
 	vram_adr(NAMETABLE_A);//set VRAM address
 	vram_unrle(g_w);
 	ppu_on_all();//enable rendering
@@ -628,46 +630,12 @@ void main(void)
 			put_score(hi_score,vie_lapin,0x2d,wait);
 		}
 		
-		 // if(wait>wait_max)
-		// {
-			// set_rand(compteur);
-			// if(tir_y < 3) tir_y--;
-			// if(tir_oeuf_y >0) tir_oeuf_y++;
-			// ennemi_machine();
-			// physique();
-			// /* for(i=0;i<2;i++)
-			// {
-				// déplacements oeufs
-				// if(oeuf[i*3]==0&&oeuf[i*3+2]==1)oeuf[i*3+2]=2;
-				// if(oeuf[i*3]==5&&oeuf[i*3+2]==2)oeuf[i*3+2]=1;
-				// if(oeuf[i*3]<6&&oeuf[i*3+2]==1)oeuf[i*3]--;
-				// if(oeuf[i*3]<6&&oeuf[i*3+2]==2)oeuf[i*3]++;
-				// if(6==oeuf[i*3]&& (rand()%5)==1)oeuf[i*3]--;
-				// if(tir_oeuf_y==0&&oeuf[i*3]!=6&&(rand()%5)==1&&oeuf[i*3+2]==1)
-				// {
-					// tir_oeuf_y++;
-					// tir_oeuf_x= oeuf[i*3];
-				// }
-			// } */
-			// wait =0;
-		// }
+		son(); // le son est joué en priotité, car il sagit en fait sur sfx de la frame -1
 		ennemi_machine();
 		physique();
-		son();
+		
 		if (wait>=wait_max) wait = 0;
 	
-/* 		if(hit_lapin==1&&(wait%2)==0)
-		{
-			// list[(pos_lapin+18)*3+2]=0x03;
-			mort_lapin(pos_lapin);
-			hit_lapin=2;
-		}
-		else if(hit_lapin==2&&(wait%2)==0)
-		{
-			// list[(pos_lapin+18)*3+2]=0x01;
-			place_lapin(pos_lapin);
-			hit_lapin=1;
-		} */
 		if(mode == 0 && pad&PAD_START)
 		{
 			mode = 1;
@@ -702,8 +670,8 @@ void main(void)
 			vie_lapin = 3;
 			place_lapin(pos_lapin);
 		}
-		put_debug(oeuf[2],oeuf[5]);
-		put_debug(oeuf[2],oeuf[5]);
+		// put_debug(oeuf[2],oeuf[5]);
+		
 	}
 
 }
